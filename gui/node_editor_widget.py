@@ -43,7 +43,9 @@ class QNodeEditor(QWgt.QWidget):
 
         # create view
         self.gl = QOpenGLWidget(self)
-        print(self.gl.updateBehavior())
+        format = self.gl.format()
+        format.setVersion(4, 6)
+        self.gl.setFormat(format)
 
         self.view = QNodeGraphicsView(self.sceneCollection.activeScene)
         self.view.setViewport(self.gl)
