@@ -133,15 +133,17 @@ class OpInsertReroute(GraphOp):
                     grouping[edge.outputSocket] = [[], []]
                 grouping[edge.outputSocket][0].append(edge)
                 grouping[edge.outputSocket][1].append(point)
-
+        # deselect everything so we can select the reroutes after creation
+        for ele in nodeView.getSelected():
+            ele.setSelected(False)
         with nodeView.nodeScene.sceneCollection.ntm:
             for edge, point in remaining:
-                # TODO: do proper creation
                 reroute: RerouteNode = cast(
                     RerouteNode,
                     nodeView.nodeScene.sceneCollection.nodeFactory.loadNode("Reroute"),
                 )
                 reroute.grNode.setPos(QCore.QPointF(point[0], point[1]))
+                reroute.grNode.setSelected(True)
 
                 inputSocket = edge.inputSocket
                 outputSocket = edge.outputSocket
@@ -161,12 +163,12 @@ class OpInsertReroute(GraphOp):
                 x = sum([p[0] for p in points]) / len(points)
                 y = sum([p[1] for p in points]) / len(points)
 
-                # TODO: do proper creation
                 reroute = cast(
                     RerouteNode,
                     nodeView.nodeScene.sceneCollection.nodeFactory.loadNode("Reroute"),
                 )
                 reroute.grNode.setPos(QCore.QPointF(x, y))
+                reroute.grNode.setSelected(True)
 
                 for edge in edges:
                     inputSocket = edge.inputSocket
