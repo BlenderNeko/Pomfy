@@ -1,0 +1,5 @@
+mypy
+pep8
+pylint
+PySide6
+websockets
