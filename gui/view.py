@@ -1,3 +1,5 @@
+# TODO: somehow disable pageup pagedown navigation stuff
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Callable
