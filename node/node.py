@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from nodeSlots.nodeSlot import NodeSlot
     from node import NodeSocket, NodeScene
 from nodeGUI import GrNode, BaseGrNode
+from nodeSlots.slots.namedSlot import NamedSlot
 
 
 class Node:
@@ -32,6 +33,8 @@ class Node:
         self._outputs: List[NodeSlot] = []
 
         self.isOutput = isOutput
+
+        self._namedInputs = 0
 
         self.grNode = self.createGUI()
 
@@ -63,7 +66,11 @@ class Node:
         return []
 
     def addInputSlot(self, slot: NodeSlot) -> None:
-        self.inputs.append(slot)
+        if isinstance(slot, NamedSlot):
+            self.inputs.insert(self._namedInputs, slot)
+            self._namedInputs += 1
+        else:
+            self.inputs.append(slot)
         self.grNode.setSlots()
 
     def addOutputSlot(self, slot: NodeSlot) -> None:
