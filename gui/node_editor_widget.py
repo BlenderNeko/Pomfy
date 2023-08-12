@@ -45,6 +45,8 @@ class QNodeEditor(QWgt.QWidget):
         self.gl = QOpenGLWidget(self)
         format = self.gl.format()
         format.setVersion(4, 6)
+        format.setProfile(QGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
+        format.setOption(QGui.QSurfaceFormat.FormatOption.DeprecatedFunctions, False)
         self.gl.setFormat(format)
 
         self.view = QNodeGraphicsView(self.sceneCollection.activeScene)
