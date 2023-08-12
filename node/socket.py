@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, Tuple
+from nodeGUI.edge import PreviewEdge
 
 from style.socketStyle import SocketPainter
 
@@ -55,10 +56,8 @@ class NodeSocket:
         nodes = []
         for e in self._edges:
             if self.nodeSlot.slotType == SlotType.INPUT:
-                assert e.outputSocket is not None
                 nodes.append(e.outputSocket.nodeSlot.node)
             elif self.nodeSlot.slotType == SlotType.OUTPUT:
-                assert e.inputSocket is not None
                 nodes.append(e.inputSocket.nodeSlot.node)
         return nodes
 
@@ -69,15 +68,13 @@ class NodeSocket:
     def deactivateSocket(self) -> None:
         self._active = False
 
-    def getEdge(self) -> NodeEdge:
+    def getEdge(self) -> Tuple[PreviewEdge, NodeEdge | None]:
         if self._nodeSlot.slotType == SlotType.OUTPUT or len(self._edges) == 0:
-            edge = NodeEdge.createPartial(self._nodeSlot.node.nodeScene, self)
-            self.updateEdges()
-            return edge
+            previewEdge = PreviewEdge(self.grNodeSocket)
+            return (previewEdge, None)
         else:
-            edge = self._edges[0]
-            edge.disconnect()
-            return edge
+            previewEdge = PreviewEdge(self._edges[0].outputSocket.grNodeSocket)
+            return (previewEdge, self._edges[0])
 
     def isCompatible(self, socket: "NodeSocket") -> bool:
         if (
@@ -129,9 +126,6 @@ class NodeSocket:
                 lambda: self.nodeSlot.grNodeSlot.setShowContent(True),
                 lambda: self.nodeSlot.grNodeSlot.setShowContent(showContent),
             )
-
-    def finalizeConnection(self, edge: NodeEdge) -> None:
-        pass
 
     def remove(self) -> None:
         edges = self._edges.copy()

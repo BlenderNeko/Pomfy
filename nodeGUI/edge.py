@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from node import NodeEdge
+    from nodeGUI import GrNodeSocket
 
 import PySide6.QtGui as QGui
 import PySide6.QtCore as QCor
@@ -15,6 +18,52 @@ class EdgeType(Enum):
     STRAIGHT = 0
     MANHATTAN = 1
     BEZIER = 2
+
+
+class PreviewEdge(QWgt.QGraphicsPathItem):
+    def __init__(self, socket: GrNodeSocket, parent: QWgt.QGraphicsItem | None = None):
+        super().__init__(parent)
+        self.socket = socket
+        self.start = socket.centerPos()
+        self.end = self.start
+        self._color = socket.socketPainter.primaryBrush.color()
+        self._edgeType = EdgeType.BEZIER
+        self._pen = QGui.QPen(self._color)
+        self._pen.setWidth(2)
+        self.updatePath()
+
+    def toMouse(self, scenePos: QPointF) -> None:
+        self.end = scenePos
+        self.updatePath()
+
+    def updatePath(self) -> None:
+        self.setZValue(1)
+        if self._edgeType == EdgeType.STRAIGHT:
+            path = straightPath(self.start, self.end)
+        elif self._edgeType == EdgeType.BEZIER:
+            path = bezierPath(self.start, self.end)
+        else:
+            path = straightPath(self.start, self.end)
+        self.setPath(path)
+
+    def paint(
+        self,
+        painter: QGui.QPainter,
+        option: QWgt.QStyleOptionGraphicsItem,
+        widget: QWgt.QWidget | None = None,
+    ) -> None:
+        painter.setPen(self._pen)
+        painter.setBrush(QGui.Qt.BrushStyle.NoBrush)
+        painter.drawPath(self.path())
+
+        pathBulbs = QGui.QPainterPath()
+        pathBulbs.setFillRule(QGui.Qt.FillRule.WindingFill)
+        pathBulbs.addEllipse(self.start, 3.0, 3.0)
+        pathBulbs.addEllipse(self.end, 3.0, 3.0)
+
+        painter.setPen(QGui.Qt.PenStyle.NoPen)
+        painter.setBrush(QGui.QBrush(self._color))
+        painter.drawPath(pathBulbs.simplified())
 
 
 class GrNodeEdge(QWgt.QGraphicsPathItem):
@@ -67,42 +116,15 @@ class GrNodeEdge(QWgt.QGraphicsPathItem):
             return self.nodeEdge.inputSocket.grNodeSocket.color
         return QGui.QColor()
 
-    def toMouse(self, scenePos: QPointF) -> None:
-        if self.nodeEdge.inputSocket is None:
-            self.end = scenePos
-        elif self.nodeEdge.outputSocket is None:
-            self.start = scenePos
-
     def updatePath(self) -> None:
-        if self.nodeEdge.inputSocket is None or self.nodeEdge.outputSocket is None:
-            self.setZValue(1)
-        else:
-            self.setZValue(-1)
+        self.setZValue(-1)
         if self._edgeType == EdgeType.STRAIGHT:
-            path = self.straightPath()
+            path = straightPath(self.start, self.end)
         elif self._edgeType == EdgeType.BEZIER:
-            path = self.bezierPath()
+            path = bezierPath(self.start, self.end)
         else:
-            path = self.straightPath()
+            path = straightPath(self.start, self.end)
         self.setPath(path)
-
-    def straightPath(self) -> QGui.QPainterPath:
-        path = QGui.QPainterPath(self.start)
-        path.lineTo(self.end)
-        return path
-
-    def bezierPath(self) -> QGui.QPainterPath:
-        easing = 1.0
-        path = QGui.QPainterPath(self.start)
-        p_x = (self.end.x() - self.start.x()) * 0.5 * easing
-
-        p1 = QPointF(self.start.x() + p_x, self.start.y())
-        p2 = QPointF(self.end.x() - p_x, self.end.y())
-        path.cubicTo(p1, p2, self.end)
-        return path
-
-    def manhattanPath(self) -> QGui.QPainterPath:
-        raise NotImplementedError()
 
     def paint(
         self,
@@ -114,12 +136,23 @@ class GrNodeEdge(QWgt.QGraphicsPathItem):
         painter.setBrush(QGui.Qt.BrushStyle.NoBrush)
         painter.drawPath(self.path())
 
-        if self.nodeEdge.inputSocket is None or self.nodeEdge.outputSocket is None:
-            pathBulbs = QGui.QPainterPath()
-            pathBulbs.setFillRule(QGui.Qt.FillRule.WindingFill)
-            pathBulbs.addEllipse(self.start, 3.0, 3.0)
-            pathBulbs.addEllipse(self.end, 3.0, 3.0)
 
-            painter.setPen(QGui.Qt.PenStyle.NoPen)
-            painter.setBrush(QGui.QBrush(self._color))
-            painter.drawPath(pathBulbs.simplified())
+def straightPath(start: QPointF, end: QPointF) -> QGui.QPainterPath:
+    path = QGui.QPainterPath(start)
+    path.lineTo(end)
+    return path
+
+
+def bezierPath(start: QPointF, end: QPointF) -> QGui.QPainterPath:
+    easing = 1.0
+    path = QGui.QPainterPath(start)
+    p_x = (end.x() - start.x()) * 0.5 * easing
+
+    p1 = QPointF(start.x() + p_x, start.y())
+    p2 = QPointF(end.x() - p_x, end.y())
+    path.cubicTo(p1, p2, end)
+    return path
+
+
+def manhattanPath(start: QPointF, end: QPointF) -> QGui.QPainterPath:
+    raise NotImplementedError()

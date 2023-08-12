@@ -13,20 +13,13 @@ class NodeEdge:
     """Class that manages and stores data pertaining the connections between NodeSockets"""
 
     @property
-    def outputSocket(self) -> NodeSocket | None:
+    def outputSocket(self) -> NodeSocket:
         """Connected output socket."""
         return self._outputSocket
 
     @property
-    def inputSocket(self) -> NodeSocket | None:
+    def inputSocket(self) -> NodeSocket:
         """Connected input socket."""
-        return self._inputSocket
-
-    @property
-    def nonEmpty(self) -> NodeSocket | None:
-        """Tries to return the first socket that is not None"""
-        if self._outputSocket is not None:
-            return self._outputSocket
         return self._inputSocket
 
     @property
@@ -41,9 +34,9 @@ class NodeEdge:
 
     def __init__(
         self,
-        nodeScene: "NodeScene",
-        outputSocket: Union["NodeSocket", None],
-        inputSocket: Union["NodeSocket", None],
+        nodeScene: NodeScene,
+        outputSocket: NodeSocket,
+        inputSocket: NodeSocket,
     ) -> None:
         self._nodeScene = nodeScene
         self.ntm = self._nodeScene.sceneCollection.ntm
@@ -51,40 +44,18 @@ class NodeEdge:
         self._inputSocket = inputSocket
         self._grEdge = GrNodeEdge(self)
         self._nodeScene.addEdge(self)
-        if outputSocket is not None:
-            outputSocket.addEdge(self)
-        if inputSocket is not None:
-            inputSocket.addEdge(self)
-
-    @staticmethod
-    def createPartial(scene: NodeScene, socket: NodeSocket) -> "NodeEdge":
-        """Creates a partial edge in the node scene, connected only to one socket."""
-        if (
-            socket.nodeSlot.slotType == SlotType.OUTPUT
-            or socket.nodeSlot.slotType == SlotType.BI
-        ):
-            return NodeEdge(scene, socket, None)
-        return NodeEdge(scene, None, socket)
-
-    def disconnect(self) -> None:
-        """Disconnect edge from the connected input socket, and highlights new candidates for connection."""
-        if self._inputSocket is not None:
-            self._inputSocket.removeEdge(self)
-            input = self.inputSocket
-            self.ntm.doStep(lambda: self._setInput(None), lambda: self._setInput(input))
-            assert self._outputSocket is not None
-            # self.nodeScene.activateSockets(self._outputSocket, self.canConnect)
+        outputSocket.addEdge(self)
+        inputSocket.addEdge(self)
+        self.updateConnections()
 
     def remove(self) -> None:
         """Removes edge from the node scene."""
-        if self._inputSocket is not None:
-            self._inputSocket.removeEdge(self)
-        if self._outputSocket is not None:
-            self._outputSocket.removeEdge(self)
+        self._inputSocket.removeEdge(self)
+        self._outputSocket.removeEdge(self)
         input = self.inputSocket
         output = self.outputSocket
         self.ntm.doStep(
-            lambda: self._setSockets(None, None),
+            lambda: self._setSockets(None, None),  # type: ignore
             lambda: self._setSockets(input, output),
         )
         self.nodeScene.removeEdge(self)
@@ -107,60 +78,28 @@ class NodeEdge:
             return self.outputSocket
         return self.inputSocket
 
-    def _setSockets(self, input: NodeSocket | None, output: NodeSocket | None) -> None:
+    def _setSockets(self, input: NodeSocket, output: NodeSocket) -> None:
         self._setInput(input)
         self._setOutput(output)
 
-    def _setInput(self, input: NodeSocket | None) -> None:
+    def _setInput(self, input: NodeSocket) -> None:
         self._inputSocket = input
         self.grEdge.update_color()
         if input is not None:
             self.grEdge.end = input.grNodeSocket.centerPos()
 
-    def _setOutput(self, output: NodeSocket | None) -> None:
+    def _setOutput(self, output: NodeSocket) -> None:
         self._outputSocket = output
         self.grEdge.update_color()
         if output is not None:
             self.grEdge.start = output.grNodeSocket.centerPos()
 
-    def canConnect(self, socket: NodeSocket) -> bool:
-        """Returns True if the given `socket` is compatible with the partial edge."""
-        currentSocket = (
-            self.inputSocket if self.inputSocket is not None else self.outputSocket
-        )
-        assert currentSocket is not None
-        return socket.isCompatible(currentSocket)
-
-    def connect(self, target: NodeSocket, removeOnFailure: bool = True) -> bool:
-        """attempts to connects edge to `target` NodeSocket, if `removeOnFailure` is True the edge will be removed from the node scene on failure."""
-        if not self.canConnect(target):
-            if removeOnFailure:
-                self.remove()
-            return False
-        if self.inputSocket is None:
-            self.ntm.doStep(
-                lambda: self._setInput(target), lambda: self._setInput(None)
-            )
-        elif self.outputSocket is None:
-            self.ntm.doStep(
-                lambda: self._setOutput(target), lambda: self._setOutput(None)
-            )
-        target.addEdge(self)
-
-        opposite = self.travelFrom(target)
-        if opposite is not None:
-            opposite.finalizeConnection(self)
-        return True
-
     def updateConnections(self) -> None:
-        if self.inputSocket is not None:
-            self.grEdge.end = self.inputSocket.grNodeSocket.centerPos()
-        if self.outputSocket is not None:
-            self.grEdge.start = self.outputSocket.grNodeSocket.centerPos()
+        self.grEdge.end = self.inputSocket.grNodeSocket.centerPos()
+        self.grEdge.start = self.outputSocket.grNodeSocket.centerPos()
 
     def saveState(self, nodeMapping: Dict[Node, int]) -> Dict[str, Any] | None:
         state: Dict[str, Any] = {}
-        assert self.inputSocket is not None and self.outputSocket is not None
         if (
             self.inputSocket.nodeSlot.node not in nodeMapping
             or self.outputSocket.nodeSlot.node not in nodeMapping

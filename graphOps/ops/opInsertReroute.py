@@ -128,7 +128,6 @@ class OpInsertReroute(GraphOp):
                 remaining.append((edge, point))
             else:
                 # directional
-                assert edge.outputSocket is not None and edge.inputSocket is not None
                 if edge.outputSocket not in grouping:
                     grouping[edge.outputSocket] = [[], []]
                 grouping[edge.outputSocket][0].append(edge)
@@ -151,9 +150,7 @@ class OpInsertReroute(GraphOp):
 
                 NodeEdge(nodeView.nodeScene, outputSocket, reroute.rerouteSlot.socket)
                 NodeEdge(nodeView.nodeScene, reroute.rerouteSlot.socket, inputSocket)
-                assert inputSocket is not None
                 inputSocket.updateEdges()
-                assert outputSocket is not None
                 outputSocket.updateEdges()
                 reroute.rerouteSlot.socket.updateEdges()
 
@@ -179,9 +176,7 @@ class OpInsertReroute(GraphOp):
                     NodeEdge(
                         nodeView.nodeScene, reroute.rerouteSlot.socket, inputSocket
                     )
-                    assert inputSocket is not None
                     inputSocket.updateEdges()
 
                 reroute.rerouteSlot.socket.updateEdges()
-                assert outputSocket is not None
                 outputSocket.updateEdges()

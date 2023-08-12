@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Tuple, TYPE_CHECKING, cast
+from nodeGUI.edge import PreviewEdge
 from server import ComfyPromptManager, NodeAddress, NodeResult, PartialPrompt
 
 from nodeGUI import GrNodeSocket
@@ -285,17 +286,12 @@ class RerouteSocket(NodeSocket):
                     and isinstance(socket, RerouteSocket)
                 ):
                     nodes.append(socket.nodeSlot.node)
-        elif (
-            self.outputConnection is not None
-            and self.outputConnection.outputSocket is not None
-        ):
+        elif self.outputConnection is not None:
             nodes.append(self.outputConnection.outputSocket.nodeSlot.node)
         return nodes
 
-    def getEdge(self) -> NodeEdge:
-        edge = NodeEdge.createPartial(self._nodeSlot.node.nodeScene, self)
-        self.updateEdges()
-        return edge
+    def getEdge(self) -> Tuple[PreviewEdge, NodeEdge | None]:
+        return (PreviewEdge(self.grNodeSocket), None)
 
     def propagateTypeChange(self, origin: NodeEdge, add: bool) -> None:
         if add:
@@ -347,10 +343,6 @@ class RerouteSocket(NodeSocket):
     def addEdge(self, edge: NodeEdge) -> None:
         opposite = edge.travelFrom(self)
 
-        if opposite is None:
-            self.createConInfo(edge)
-            return
-
         rerouteConnection = None
         for ele in self.rerouteConnections:
             if ele.edge == edge:
@@ -382,19 +374,13 @@ class RerouteSocket(NodeSocket):
 
         rerouteConnection.socket = opposite
 
-    def finalizeConnection(self, edge: NodeEdge) -> None:
-        self.addEdge(edge)
-
     def removeEdge(self, edge: NodeEdge) -> None:
         rerouteConnection = self.removeConInfo(edge)
 
         if self.outputConnection == edge:
             self.outputConnection = None
             self._propagateOutputConnectionChange(edge, False)
-        if (
-            rerouteConnection is not None
-            and self._getTypeName(rerouteConnection.socket) != ""
-        ):
+        if edge in self.typeSources:
             self.propagateTypeChange(edge, False)
 
     def remove(self) -> None:

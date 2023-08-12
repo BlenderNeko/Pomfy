@@ -6,11 +6,13 @@ import PySide6.QtWidgets as QWgt
 from constants import SlotType
 
 from graphOps import GraphOp, GR_OP_STATUS, registerOp
-from nodeGUI import GrNodeSocket
+from graphOps.graphOp import GR_OP_STATUS
+from nodeGUI import GrNodeSocket, PreviewEdge
+from node import NodeEdge
 
 if TYPE_CHECKING:
-    from gui.view import QNodeGraphicsView
-    from node import NodeEdge
+    from gui import QNodeGraphicsView
+
 
 MouseButton = QGui.Qt.MouseButton
 KeyboardModifier = QGui.Qt.KeyboardModifier
@@ -22,8 +24,8 @@ class OpAddEdge(GraphOp):
         self,
     ) -> None:
         super().__init__([], 1, False)
-        self.dragged_edge: NodeEdge | None = None
-        self.stored_socket: GrNodeSocket | None = None
+        self.dragged_edge: PreviewEdge | None = None
+        self.stored_edge: NodeEdge | None = None
 
     def onMouseDown(
         self, event: QGui.QMouseEvent, nodeView: QNodeGraphicsView
@@ -33,19 +35,21 @@ class OpAddEdge(GraphOp):
             and event.modifiers() == KeyboardModifier.NoModifier
         ):
             obj = nodeView.itemAt(event.pos())
+            # if user pressed a a socket
             if obj is not None and isinstance(obj, GrNodeSocket):
-                if obj.nodeSocket.nodeSlot.slotType == SlotType.INPUT:
-                    self.stored_socket = obj
                 nodeView.nodeScene.sceneCollection.ntm.startTransaction()
-                self.dragged_edge = obj.nodeSocket.getEdge()
-                assert (
-                    self.dragged_edge is not None
-                    and self.dragged_edge.nonEmpty is not None
-                )
+                # get preview edge, and potentially already connected edge in case of input sockets
+                self.dragged_edge, self.stored_edge = obj.nodeSocket.getEdge()
+                # temp hide connected edge
+                if self.stored_edge is not None:
+                    nodeView.grScene.removeItem(self.stored_edge.grEdge)
+                nodeView.grScene.addItem(self.dragged_edge)
+                # look for potential target sockets
                 nodeView.nodeScene.activateSockets(
-                    self.dragged_edge.nonEmpty, self.dragged_edge.canConnect
+                    self.dragged_edge.socket.nodeSocket,
+                    self.dragged_edge.socket.nodeSocket.isCompatible,
                 )
-                self.dragged_edge.grEdge.toMouse(nodeView.mapToScene(event.pos()))
+                self.dragged_edge.toMouse(nodeView.mapToScene(event.pos()))
                 return GR_OP_STATUS.START
         return GR_OP_STATUS.NOTHING
 
@@ -55,6 +59,7 @@ class OpAddEdge(GraphOp):
                 return ele
         return None
 
+    # does moving and snapping
     def onMouseMove(
         self, event: QGui.QMouseEvent, nodeView: QNodeGraphicsView
     ) -> GR_OP_STATUS:
@@ -63,7 +68,7 @@ class OpAddEdge(GraphOp):
             pos = nodeView.mapToScene(event.pos())
             if obj is not None and obj.nodeSocket.active:
                 pos = obj.nodeSocket.scenePosition
-            self.dragged_edge.grEdge.toMouse(pos)
+            self.dragged_edge.toMouse(pos)
         return GR_OP_STATUS.NOTHING
 
     def onMouseUp(
@@ -72,22 +77,54 @@ class OpAddEdge(GraphOp):
         if self.dragged_edge is None:
             return GR_OP_STATUS.NOTHING
 
+        if self.stored_edge is not None:
+            nodeView.grScene.addItem(self.stored_edge.grEdge)
+
         obj = self.findSocket(nodeView.items(event.pos()))
         if obj is not None and obj.nodeSocket.active:
-            self.dragged_edge.connect(obj.nodeSocket)
-            assert self.dragged_edge.inputSocket is not None
-            if self.dragged_edge.inputSocket.grNodeSocket == self.stored_socket:
-                nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
+            # we had an existing edge
+            if self.stored_edge is not None:
+                # nothing changed, abort
+                if self.stored_edge.inputSocket == obj.nodeSocket:
+                    nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
+                # existing edge has new target
+                else:
+                    self.stored_edge.remove()
+                    edge = NodeEdge(
+                        nodeView.nodeScene,
+                        self.dragged_edge.socket.nodeSocket,
+                        obj.nodeSocket,
+                    )
+                    edge.updateConnections()
+                    nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
+            # no existing edge, create new edge
             else:
+                # in case either of the sockets is in or output socket, put them in the correct spot
+                outputSocket = (
+                    obj.nodeSocket
+                    if obj.nodeSocket.nodeSlot.slotType == SlotType.OUTPUT
+                    or self.dragged_edge.socket.nodeSocket.nodeSlot.slotType
+                    == SlotType.INPUT
+                    else self.dragged_edge.socket.nodeSocket
+                )
+                inputSocket = (
+                    self.dragged_edge.socket.nodeSocket
+                    if outputSocket == obj.nodeSocket
+                    else obj.nodeSocket
+                )
+
+                edge = NodeEdge(nodeView.nodeScene, outputSocket, inputSocket)
+                edge.updateConnections()
                 nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
+        # no valid target found, abort or delete
         else:
-            if self.stored_socket is not None and self.dragged_edge.inputSocket is None:
-                self.dragged_edge.remove()
+            if self.stored_edge is not None:
+                self.stored_edge.remove()
                 nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
             else:
-                self.dragged_edge.remove()
                 nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
+        nodeView.grScene.removeItem(self.dragged_edge)
+        self.stored_edge = None
         self.dragged_edge = None
-        self.stored_socket = None
         nodeView.nodeScene.deactivateSockets()
         return GR_OP_STATUS.FINISH
