@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
 from graphOps import GraphOp, registerOp
 from PySide6.QtGui import *
-from nodeGUI.node import GrNode
+from nodeGUI.node import BaseGrNode
 
 
 @registerOp
@@ -28,7 +28,7 @@ class OpDelete(GraphOp):
             return GR_OP_STATUS.NOTHING
         with nodeView.nodeScene.sceneCollection.ntm:
             for item in selection:
-                if isinstance(item, GrNode):
+                if isinstance(item, BaseGrNode):
                     item.node.remove()
 
         return GR_OP_STATUS.FINISH
