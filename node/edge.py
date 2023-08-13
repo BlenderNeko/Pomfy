@@ -40,12 +40,14 @@ class NodeEdge:
     ) -> None:
         self._nodeScene = nodeScene
         self.ntm = self._nodeScene.sceneCollection.ntm
-        self._outputSocket = outputSocket
-        self._inputSocket = inputSocket
+        self._outputSocket: NodeSocket = outputSocket
+        self._inputSocket: NodeSocket = inputSocket
         self._grEdge = GrNodeEdge(self)
         self._nodeScene.addEdge(self)
         outputSocket.addEdge(self)
         inputSocket.addEdge(self)
+        outputSocket.triggerConnectionChange(self)
+        inputSocket.triggerConnectionChange(self)
         self.updateConnections()
 
     def remove(self) -> None:
@@ -54,6 +56,8 @@ class NodeEdge:
         self._outputSocket.removeEdge(self)
         input = self.inputSocket
         output = self.outputSocket
+        output.triggerConnectionChange(self)
+        input.triggerConnectionChange(self)
         self.ntm.doStep(
             lambda: self._setSockets(None, None),  # type: ignore
             lambda: self._setSockets(input, output),
@@ -72,7 +76,7 @@ class NodeEdge:
             lambda: self._setSockets(input, output),
         )
 
-    def travelFrom(self, target: NodeSocket) -> NodeSocket | None:
+    def travelFrom(self, target: NodeSocket) -> NodeSocket:
         """Returns the NodeSocket opposite to `target` or the input socket if `target` does not exist."""
         if self.inputSocket == target:
             return self.outputSocket

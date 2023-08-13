@@ -27,6 +27,13 @@ class Event:
             if r is None:
                 toRemove.append(ref)
                 continue
-            r(args, kwds)
+            if len(args) == 0 and len(kwds) == 0:
+                r()
+            elif len(kwds) == 0:
+                r(args)
+            elif len(args) == 0:
+                r(kwds)
+            else:
+                r(args, kwds)
         for ref in toRemove:
             self._callbacks.remove(ref)

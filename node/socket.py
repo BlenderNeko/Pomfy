@@ -12,6 +12,7 @@ from node import NodeEdge
 from constants import SlotType
 from nodeGUI import GrNodeSocket
 from PySide6.QtCore import QPointF
+from events import Event
 
 
 class NodeSocket:
@@ -48,9 +49,23 @@ class NodeSocket:
         self._edges: List[NodeEdge] = []
         self.ntm = self.nodeSlot.node.nodeScene.sceneCollection.ntm
         self.grNodeSocket = self.createGUI(socketPainter)
+        self.onConnectionChanged: Event = Event()
 
     def createGUI(self, socketPainter: SocketPainter) -> GrNodeSocket:
         return GrNodeSocket(self, socketPainter)
+
+    def triggerConnectionChange(self, edge: NodeEdge) -> None:
+        self.onConnectionChanged()
+
+    def getConnected(self) -> List[NodeSocket]:
+        sockets: List[NodeSocket] = []
+        for edge in self.edges:
+            socket = edge.travelFrom(self)
+            sockets.extend(socket.resolveConnected(self.nodeSlot.slotType))
+        return sockets
+
+    def resolveConnected(self, origin: SlotType) -> List[NodeSocket]:
+        return [self]
 
     def getConnectedForDeactivation(self) -> List[Node]:
         nodes = []

@@ -39,6 +39,7 @@ class Node:
         self.grNode = self.createGUI()
 
         self.nodeScene.addNode(self)
+        self.clientOnly: bool = False
 
     @property
     def inputs(self) -> List[NodeSlot]:
@@ -178,4 +179,6 @@ class Node:
             slotOutput = slot.execute(promptManager)
             assert slotOutput is not None
             slotOutputs[slot.ind] = slotOutput
+        if self.clientOnly:
+            return (PartialPrompt.empty(), slotOutputs)
         return (PartialPrompt(slotResults, self.nodeClass), slotOutputs)

@@ -290,6 +290,42 @@ class RerouteSocket(NodeSocket):
             nodes.append(self.outputConnection.outputSocket.nodeSlot.node)
         return nodes
 
+    def resolveConnected(self, origin: SlotType) -> List[NodeSocket]:
+        if self.outputConnection is None:
+            return []
+        if origin == SlotType.INPUT:
+            return self.outputConnection.travelFrom(self).resolveConnected(origin)
+        sockets: List[NodeSocket] = []
+        for con in self.rerouteConnections:
+            if con.edge is not self.outputConnection:
+                sockets.extend(con.edge.travelFrom(self).resolveConnected(origin))
+        return sockets
+
+    def triggerConnectionChange(self, edge: NodeEdge) -> None:
+        if self.outputConnection is not None:
+            # If we're directional, simply figure out which way to send event
+            if edge == self.outputConnection:
+                for con in self.rerouteConnections:
+                    if con.edge is not edge:
+                        con.edge.travelFrom(self).triggerConnectionChange(con.edge)
+            else:
+                self.outputConnection.travelFrom(self).triggerConnectionChange(
+                    self.outputConnection
+                )
+            return
+        # If we're not directional, find out if we used to be
+        target = edge.travelFrom(self)
+        if (isinstance(target, RerouteSocket) and target.outputConnection is None) or (
+            not isinstance(target, RerouteSocket)
+            and target.nodeSlot.slotType == SlotType.INPUT
+        ):
+            # target is either an input socket or an undirected reroute, edge wan't an output connection
+            # we weren't directional
+            return
+        # edge used to be our output connection, send things forwards
+        for con in self.rerouteConnections:
+            con.edge.travelFrom(self).triggerConnectionChange(con.edge)
+
     def getEdge(self) -> Tuple[PreviewEdge, NodeEdge | None]:
         return (PreviewEdge(self.grNodeSocket), None)
 

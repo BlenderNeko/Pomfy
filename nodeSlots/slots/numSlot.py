@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, List, TypedDict, Dict, cast
+from typing import TYPE_CHECKING, Any, List, TypedDict, Dict, cast, TypeVar, Generic
 
 from decimal import Decimal
 
@@ -19,43 +19,42 @@ if TYPE_CHECKING:
 
 from nodeSlots.nodeSlot import NodeSlot, registerSlot
 
+T = TypeVar("T", Decimal, int)
 
-class NumSlot(NodeSlot):
+
+class NumSlot(NodeSlot, Generic[T]):
     def __init__(
         self,
         node: Node,
-        isFloat: bool,
-        default: int | Decimal,
+        default: T,
         name: str,
         ind: int,
         typeName: str,
         socketPainter: SocketPainter,
         slotType: SlotType,
-        min: int | Decimal | None = None,
-        max: int | Decimal | None = None,
-        step: int | Decimal | None = None,
-        valid: int | Decimal | None = None,
-        validOffset: int | Decimal | None = None,
+        min: T | None = None,
+        max: T | None = None,
+        step: T | None = None,
+        valid: T | None = None,
+        validOffset: T | None = None,
         isOptional: bool = False,
     ) -> None:
-        self.isFloat = isFloat
-        self.default = default
-        self.min = min
-        self.max = max
-        self.step = step
-        self.valid = valid
-        self.validOffset = validOffset
+        self.default: T = default
+        self.min: T | None = min
+        self.max: T | None = max
+        self.step: T | None = step
+        self.valid: T | None = valid
+        self.validOffset: T | None = validOffset
         super().__init__(
             node, default, name, ind, typeName, socketPainter, slotType, isOptional
         )
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
-        self.grItem = QNumSpinner(
+        self.grItem: QNumSpinner[T] = QNumSpinner[T](
             self.name,
             100,
             height,
             self._value_changed,
-            self.isFloat,
             self.default,
             self.min,
             self.max,
@@ -72,7 +71,7 @@ class NumSlot(NodeSlot):
 
 
 @registerSlot
-class IntSlot(NumSlot):
+class IntSlot(NumSlot[int]):
     def __init__(
         self,
         node: Node,
@@ -90,7 +89,6 @@ class IntSlot(NumSlot):
     ) -> None:
         super().__init__(
             node,
-            False,
             default,
             name,
             ind,
@@ -157,7 +155,7 @@ class IntSlot(NumSlot):
 
 
 @registerSlot
-class FloatSlot(NumSlot):
+class FloatSlot(NumSlot[Decimal]):
     def __init__(
         self,
         node: Node,
@@ -175,7 +173,6 @@ class FloatSlot(NumSlot):
     ) -> None:
         super().__init__(
             node,
-            False,
             default,
             name,
             ind,
