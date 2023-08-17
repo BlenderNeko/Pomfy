@@ -91,8 +91,8 @@ class MenuData:
             self.subMenus[cat] = MenuData(cat)
         self.subMenus[cat].addItem(categories, displayName, className, constructor)
 
-    def flat(self) -> List['MenuItem']:
-        items : list[MenuItem] = []
+    def flat(self) -> List["MenuItem"]:
+        items: list[MenuItem] = []
         for sub in self.subMenus.values():
             items.extend(sub.flat())
         items.extend(self.items.values())
@@ -119,29 +119,33 @@ class ComfyFactory:
         self.socketStyles = socketStyles
         self.activeScene: NodeScene | None = None
         self._menu: QWgt.QMenu | None = None
-        self._flatMenu : List[MenuItem] | None = None
+        self._flatMenu: List[MenuItem] | None = None
         self._onCreate: Callable[[Node], None] | None = None
-        
 
-    def execSearch(self):
+    def execSearch(self) -> None:
+        assert self._flatMenu is not None
         self._simpleSearchDiag = QWgt.QDialog()
         self._simpleSearchDiag.setLayout(QWgt.QVBoxLayout())
         self._simpleSearchDiag.layout().setContentsMargins(0, 0, 0, 0)
         self._simpleSearchDiag.setWindowFlags(
             QGui.Qt.WindowType.Popup | QGui.Qt.WindowType.BypassGraphicsProxyWidget
         )
-        simpleSearch = QSearchableMenu(self._flatMenu, lambda x: x.displayName, lambda x, y: y.lower() in x.displayName.lower() or y.lower() in x.name.lower())
+        simpleSearch = QSearchableMenu(
+            self._flatMenu,
+            lambda x: x.displayName,
+            lambda x, y: y.lower() in x.displayName.lower()
+            or y.lower() in x.name.lower(),
+        )
         simpleSearch.finished.connect(self.finishSearch)
         self._simpleSearchDiag.layout().addWidget(simpleSearch)
         simpleSearch._filterBox.setFocus()
         self._simpleSearchDiag.move(QGui.QCursor.pos() + QCor.QPoint(5, -5))
         self._simpleSearchDiag.exec()
-        
 
-    def finishSearch(self, ind:int):
+    def finishSearch(self, ind: int) -> None:
         self._simpleSearchDiag.accept()
+        assert self._flatMenu is not None
         self._flatMenu[ind].constructor()
-        print(ind)
 
     def GenerateMenu(
         self, onCreate: Callable[[Node], None] | None = None
@@ -152,7 +156,7 @@ class ComfyFactory:
             searchAction = QGui.QAction("search")
             searchAction.triggered.connect(self.execSearch)
             self._menu.insertAction(self._menu.actions()[0], searchAction)
-        
+
         self._onCreate = onCreate
         return self._menu
 

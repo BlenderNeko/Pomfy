@@ -32,7 +32,7 @@ class QStraightLine(QWgt.QGraphicsPathItem):
         self._pen.setWidth(4)
         self.updatePath(self.start)
 
-    def updatePath(self, end:QCor.QPointF) -> None:
+    def updatePath(self, end: QCor.QPointF) -> None:
         path = QGui.QPainterPath(self.start)
         self.end = end
         path.lineTo(self.end)
@@ -64,7 +64,7 @@ class OpSmartConnect(GraphOp):
     ) -> None:
         super().__init__([], 1, False)
         self.line: QStraightLine | None = None
-        self.startNode: BaseGrNode | None = None 
+        self.startNode: BaseGrNode | None = None
 
     def onMouseDown(
         self, event: QGui.QMouseEvent, nodeView: QNodeGraphicsView
@@ -96,16 +96,22 @@ class OpSmartConnect(GraphOp):
     def onMouseUp(
         self, event: QGui.QMouseEvent, nodeView: QNodeGraphicsView
     ) -> GR_OP_STATUS:
-        if event.button() == MouseButton.RightButton and self.line is not None:
-            objs = nodeView.items(event.pos())
-            objs = [x for x in objs if isinstance(x, BaseGrNode)]
+        if (
+            event.button() == MouseButton.RightButton
+            and self.line is not None
+            and self.startNode is not None
+        ):
+            objs_at = nodeView.items(event.pos())
+            objs = [x for x in objs_at if isinstance(x, BaseGrNode)]
             obj = objs[0] if len(objs) > 0 else None
             if obj is not None:
                 swap = self.line.start.x() > self.line.end.x()
                 startNode = obj if swap else self.startNode
                 endNode = obj if not swap else self.startNode
                 for startSlot in startNode.node.outputs:
-                    nodeView.nodeScene.activateSockets(startSlot.socket, startSlot.socket.isCompatible)
+                    nodeView.nodeScene.activateSockets(
+                        startSlot.socket, startSlot.socket.isCompatible
+                    )
                     for endSlot in endNode.node.inputs:
                         if endSlot.socket.active and len(endSlot.socket.edges) == 0:
                             with nodeView.nodeScene.sceneCollection.ntm:
@@ -119,7 +125,7 @@ class OpSmartConnect(GraphOp):
                             self.startNode = None
                             nodeView.nodeScene.grScene.removeItem(self.line)
                             self.line = None
-                            return GR_OP_STATUS.FINISH | GR_OP_STATUS.BLOCK    
+                            return GR_OP_STATUS.FINISH | GR_OP_STATUS.BLOCK
             self.startNode = None
             nodeView.nodeScene.grScene.removeItem(self.line)
             self.line = None
