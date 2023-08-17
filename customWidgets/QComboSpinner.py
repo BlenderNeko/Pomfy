@@ -29,7 +29,7 @@ class QComboSpinner(QGraphicsSpinnerItem):
         self.items = items
         self.num_items = len(self.items)
         self.renderFunc = lambda x: x
-        self.FilterFunc = lambda x, y: True if y == "" else x.find(y) != -1
+        self.FilterFunc = lambda x, y: y.lower() in x.lower()
         super().__init__(name, selected, width, height, onValueChanged, parent)
 
     def initUI(self) -> None:
