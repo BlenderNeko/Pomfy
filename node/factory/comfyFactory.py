@@ -2,7 +2,11 @@ import collections
 from functools import partial
 from decimal import Decimal
 import json
-from typing import Dict, Callable, Any, Tuple, List, TypedDict, Literal, cast
+from typing import Dict, Callable, Any, Optional, Tuple, List, TypedDict, Literal, cast
+
+import PySide6.QtCore
+import PySide6.QtGui
+import PySide6.QtWidgets
 from constants import SlotType, SocketShape
 from customWidgets.QSearchableList import QSearchableMenu
 from node import Node, NodeScene
@@ -111,6 +115,24 @@ class MenuItem:
         self.constructor = constructor
 
 
+class SearchDiag(QWgt.QDialog):
+    def __init__(
+        self, search: QSearchableMenu, parent: QWgt.QWidget | None = None
+    ) -> None:
+        super().__init__(parent)
+        self.setLayout(QWgt.QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.setWindowFlags(
+            QGui.Qt.WindowType.Popup | QGui.Qt.WindowType.BypassGraphicsProxyWidget
+        )
+        self.layout().addWidget(search)
+        search.contentChanged.connect(self.contentChanged)
+        self.search = search
+
+    def contentChanged(self) -> None:
+        self.adjustSize()
+
+
 class ComfyFactory:
     def __init__(self, socketStyles: SocketStyles) -> None:
         self._nodeDefinitions: ComfySpec = {}
@@ -124,21 +146,15 @@ class ComfyFactory:
 
     def execSearch(self) -> None:
         assert self._flatMenu is not None
-        self._simpleSearchDiag = QWgt.QDialog()
-        self._simpleSearchDiag.setLayout(QWgt.QVBoxLayout())
-        self._simpleSearchDiag.layout().setContentsMargins(0, 0, 0, 0)
-        self._simpleSearchDiag.setWindowFlags(
-            QGui.Qt.WindowType.Popup | QGui.Qt.WindowType.BypassGraphicsProxyWidget
-        )
         simpleSearch = QSearchableMenu(
             self._flatMenu,
             lambda x: x.displayName,
             lambda x, y: y.lower() in x.displayName.lower()
             or y.lower() in x.name.lower(),
+            maxRows=10,
         )
         simpleSearch.finished.connect(self.finishSearch)
-        self._simpleSearchDiag.layout().addWidget(simpleSearch)
-        simpleSearch._filterBox.setFocus()
+        self._simpleSearchDiag = SearchDiag(simpleSearch)
         self._simpleSearchDiag.move(QGui.QCursor.pos() + QCor.QPoint(5, -5))
         self._simpleSearchDiag.exec()
 
