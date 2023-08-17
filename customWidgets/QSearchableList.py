@@ -253,6 +253,10 @@ class QSearchableMenu(QWgt.QWidget):
         ):
             self.finished.emit(self._list.selectedIndex)
             self.close()
+        elif event.key() == QGui.Qt.Key.Key_Down:
+            self._list.scrollByInd(1)
+        elif event.key() == QGui.Qt.Key.Key_Up:
+            self._list.scrollByInd(-1)
         super().keyPressEvent(event)
 
     def wheelEvent(self, event: QGui.QWheelEvent) -> None:
