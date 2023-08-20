@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Callable
 
+import PySide6.QtGui
+
 from style.socketStyle import SocketStyles
 
 if TYPE_CHECKING:
@@ -72,6 +74,8 @@ class QNodeGraphicsView(QWgt.QGraphicsView):
 
         self.setHorizontalScrollBarPolicy(QGui.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QGui.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.horizontalScrollBar().blockSignals(True)
+        self.verticalScrollBar().blockSignals(True)
         self.setTransformationAnchor(QWgt.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
     def disableMouseEvents(self) -> None:
@@ -142,6 +146,9 @@ class QNodeGraphicsView(QWgt.QGraphicsView):
 
     def getSelected(self) -> List[BaseGrNode]:
         return [x for x in self.items() if x.isSelected() and isinstance(x, BaseGrNode)]
+
+    def keyPressEvent(self, event: QGui.QKeyEvent) -> None:
+        super().keyPressEvent(event)
 
     def processMouseOps(self, func: Callable[[GraphOp], GR_OP_STATUS]) -> GR_OP_STATUS:
         # print(self.activeOp)
