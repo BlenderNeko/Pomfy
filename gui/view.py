@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Callable
+import PySide6.QtCore
 
 import PySide6.QtGui
 
@@ -74,8 +75,8 @@ class QNodeGraphicsView(QWgt.QGraphicsView):
 
         self.setHorizontalScrollBarPolicy(QGui.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QGui.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.horizontalScrollBar().blockSignals(True)
-        self.verticalScrollBar().blockSignals(True)
+        self.horizontalScrollBar().setPageStep(0)
+        self.verticalScrollBar().setPageStep(0)
         self.setTransformationAnchor(QWgt.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
     def disableMouseEvents(self) -> None:
