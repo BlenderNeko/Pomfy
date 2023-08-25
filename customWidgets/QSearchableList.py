@@ -115,7 +115,7 @@ class _QSearchableMenu(QWgt.QWidget):
         if item_ind == -1:
             return
         self.update_selected(self._selected, False)
-        top_ind = min(len(self._filteredItems) - self._maxRows, item_ind)
+        top_ind = max(0, min(len(self._filteredItems) - self._maxRows, item_ind))
         for ele in self._filteredItems:
             ele.hide()
         for i in range(top_ind, min(top_ind + self._maxRows, len(self._filteredItems))):
