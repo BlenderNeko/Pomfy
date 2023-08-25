@@ -46,6 +46,8 @@ class MaybeSceneCollection:
         names = glob(os.path.join(path, "*.pnt"))
         names = [os.path.splitext(os.path.basename(x))[0] for x in names]
         splits = [re.split(r"\_(?=\d{3}\.pnt$)", x) for x in names]
+        if len(splits) == 0:
+            return ([], [])
         names, counts = zip(*[(x[0], int(x[1]) if len(x) > 1 else 0) for x in splits])
         return (names, counts)
 
