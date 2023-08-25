@@ -78,9 +78,12 @@ class BaseGrNode(QWgt.QGraphicsItem):
         super().__init__(parent)
         self.node = node
         self._pen_default = QGui.QPen(QGui.QColor("#7F000000"))
-        self._pen_selected = QGui.QPen(QGui.QColor("#FFFFA637"))
+        self._pen_selected = QGui.QPen(QGui.QColor("#FFA637"))
         self._pen_selected.setWidthF(2.0)
+        self._pen_active = QGui.QPen(QGui.QColor("#F6E300"))
+        self._pen_active.setWidthF(2.0)
         self._width: float = 100.0
+        self._active = False
 
     def resize(self, width: float) -> None:
         pass
@@ -90,6 +93,14 @@ class BaseGrNode(QWgt.QGraphicsItem):
 
     def updateSlots(self) -> None:
         pass
+
+    @property
+    def activeNode(self) -> bool:
+        return self._active
+
+    @activeNode.setter
+    def activeNode(self, value: bool) -> None:
+        self._active = value
 
 
 class GrNode(BaseGrNode):
@@ -221,9 +232,12 @@ class GrNode(BaseGrNode):
         painter.drawPath(self._contentPath)
 
         # outline
-        painter.setPen(
-            self._pen_default if not self.isSelected() else self._pen_selected
-        )
+        outlinePen = self._pen_default
+        if self.isSelected():
+            outlinePen = self._pen_selected
+        if self.activeNode:
+            outlinePen = self._pen_active
+        painter.setPen(outlinePen)
         painter.setBrush(QGui.Qt.BrushStyle.NoBrush)
         painter.drawPath(self._outlinePath)
 

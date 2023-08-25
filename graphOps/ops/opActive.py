@@ -5,7 +5,7 @@ import PySide6.QtGui as QGui
 import PySide6.QtWidgets as QWgt
 
 from graphOps import GraphOp, GR_OP_STATUS, registerOp
-from nodeGUI import BaseGrNode
+from nodeGUI import BaseGrNode, GrNode
 
 if TYPE_CHECKING:
     from gui.view import QNodeGraphicsView
@@ -36,6 +36,7 @@ class OpActive(GraphOp):
             and event.modifiers() == KeyboardModifier.NoModifier
         ):
             nodeView.setDragMode(QWgt.QGraphicsView.DragMode.RubberBandDrag)
+            nodeView.activeNode = None
             item = nodeView.itemAt(event.pos())
             if not isinstance(item, BaseGrNode):
                 while item is not None:
@@ -44,9 +45,12 @@ class OpActive(GraphOp):
                         break
             if item is not None:
                 selected = nodeView.getSelected()
+                # TODO: why does mypy complain?
+                nodeView.activeNode = item  # type: ignore
                 for s in selected:
                     s.setSelected(False)
                 item.setSelected(True)
+
             return GR_OP_STATUS.FINISH
         return GR_OP_STATUS.NOTHING
 

@@ -11,14 +11,14 @@ from style.socketStyle import SocketStyles
 
 if TYPE_CHECKING:
     from graphOps import GraphOp
-    from node import NodeEdge, NodeScene
+    from node import NodeEdge, NodeScene, Node
 
 from graphOps import loadOps, GR_OP_STATUS
 
 
 from functools import partial
 
-from nodeGUI import BaseGrNode
+from nodeGUI import BaseGrNode, GrNode
 
 import PySide6.QtGui as QGui
 import PySide6.QtCore as QCor
@@ -56,11 +56,26 @@ class QNodeGraphicsView(QWgt.QGraphicsView):
         self.zoomRange = (0, 12)
 
         self._activeOp = None
+        self._activeNode: BaseGrNode | None = None
 
         self.setScene(self.grScene)
         self.initUI()
         self.initActions()
         self.initGraphOps()
+
+    @property
+    def activeNode(self) -> None | Node:
+        if self._activeNode is not None:
+            return self._activeNode.node
+        return None
+
+    @activeNode.setter
+    def activeNode(self, value: BaseGrNode | None) -> None:
+        if self._activeNode is not None:
+            self._activeNode.activeNode = False
+        self._activeNode = value
+        if value is not None:
+            value.activeNode = True
 
     def initUI(self) -> None:
         self.setRenderHints(
