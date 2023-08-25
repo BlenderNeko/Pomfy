@@ -115,6 +115,7 @@ class MenuItem:
         self.constructor = constructor
 
 
+# TODO: can't type on mac?
 class SearchDiag(QWgt.QDialog):
     def __init__(
         self, search: QSearchableMenu, parent: QWgt.QWidget | None = None
@@ -131,6 +132,10 @@ class SearchDiag(QWgt.QDialog):
 
     def contentChanged(self) -> None:
         self.adjustSize()
+
+    def showEvent(self, arg__1: QGui.QShowEvent) -> None:
+        super().showEvent(arg__1)
+        self.activateWindow()
 
 
 class ComfyFactory:
