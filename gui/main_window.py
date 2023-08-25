@@ -51,11 +51,13 @@ class NodeEditorWindow(QMainWindow):
 
         saveAction = fileMenu.addAction("Save")
         saveAction.triggered.connect(self.saveNodes)
-        # loadAction = fileMenu.addAction("Load")
-        # sendAction = fileMenu.addAction("Send")
 
+        sendAction = fileMenu.addAction("Send")
+        sendAction.triggered.connect(self.sendPrompt)
+
+        # loadAction = fileMenu.addAction("Load")
         # loadAction.triggered.connect(self.loadNodes)
-        # sendAction.triggered.connect(self.sendPrompt)
+
         self.showMaximized()
 
     def openNodes(self, collection: MaybeSceneCollection, name: str) -> None:
@@ -124,7 +126,8 @@ class NodeEditorWindow(QMainWindow):
     #        saveString = f.readline()
     #    self.nodeEditorWidget.sceneCollection.fromJSON(saveString)
 
-    # def sendPrompt(self) -> None:
-    #    prompt = self.nodeEditorWidget.sceneCollection.prompt()
-    #    result = self.connection.sendPrompt(prompt)
-    #    print(result)
+    def sendPrompt(self) -> None:
+        editor = cast(QNodeEditor, self.tabs.currentWidget())
+        prompt = editor.sceneCollection.collection.prompt()
+        result = self.connection.sendPrompt(prompt)
+        print(result)
