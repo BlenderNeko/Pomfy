@@ -11,7 +11,7 @@ from nodeGUI import QNodeGraphicsScene
 
 
 class NodeScene:
-    def __init__(self, sceneCollection: SceneCollection):
+    def __init__(self, sceneCollection: SceneCollection, name: str = "nodeTree"):
         self.nodes: List[Node] = []
         self.edges: List[NodeEdge] = []
         self.nodeIds: Dict[str, List[int]] = {}
@@ -20,6 +20,8 @@ class NodeScene:
 
         self.scene_width = 64000
         self.scene_height = 64000
+
+        self.name = name
 
         self.initUI()
 
@@ -118,6 +120,7 @@ class NodeScene:
 
     def loadState(self, state: Dict[str, Any], factory: ComfyFactory) -> List[Node]:
         nodes: List[Node] = []
+        self.name = state["name"]
         for nodeState in state["nodes"]:
             node = factory.loadNode(nodeState["nodeClass"])
             node.loadState(nodeState)
@@ -140,4 +143,4 @@ class NodeScene:
             savedEdge = edge.saveState(nodeMapping)
             if savedEdge is not None:
                 savedEdges.append(savedEdge)
-        return {"nodes": savedNodes, "edges": savedEdges}
+        return {"name": self.name, "nodes": savedNodes, "edges": savedEdges}
