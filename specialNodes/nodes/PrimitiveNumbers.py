@@ -1,6 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, Generic, cast, Callable, List, Generator
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+    Generic,
+    cast,
+    Callable,
+    List,
+    Generator,
+    Tuple,
+)
 from constants import SlotType
 from customWidgets.QNumSpinner import QNumSpinner
 
@@ -95,6 +105,10 @@ class FloatPrimitive(NumPrimitive[Decimal]):
 
         return node
 
+    @classmethod
+    def searchableOutputs(cls) -> List[Tuple[str, str]]:
+        return [("value", "FLOAT")]
+
 
 @registerCustomNode
 class IntPrimitive(NumPrimitive[Decimal]):
@@ -120,3 +134,7 @@ class IntPrimitive(NumPrimitive[Decimal]):
         intSlot.socket.onConnectionChanged += node.recalcSpinnerSettings
 
         return node
+
+    @classmethod
+    def searchableOutputs(cls) -> List[Tuple[str, str]]:
+        return [("value", "INT")]
