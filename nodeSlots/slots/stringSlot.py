@@ -21,6 +21,8 @@ from nodeSlots.nodeSlot import NodeSlot, registerSlot
 
 @registerSlot
 class MultiLineTextSlot(NodeSlot):
+    SocketTypeName = "STRING"
+
     def __init__(
         self,
         node: Node,
@@ -40,7 +42,7 @@ class MultiLineTextSlot(NodeSlot):
             default,
             name,
             ind,
-            "STRING",
+            self.SocketTypeName,
             socketPainter,
             slotType,
             isOptional,
@@ -57,19 +59,25 @@ class MultiLineTextSlot(NodeSlot):
         return self.proxy
 
     @classmethod
-    def constructableFromSpec(self, spec: Any) -> bool:
+    def constructableFromSpec(cls, spec: Any) -> bool:
         return (
             isinstance(spec, list)
             and len(spec) == 2
-            and spec[0] == "STRING"
+            and spec[0] == cls.SocketTypeName
             and isinstance(spec[1], dict)
             and "multiline" in spec[1]
             and spec[1]["multiline"]
         )
 
     @classmethod
+    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+        if cls.constructableFromSpec(spec):
+            return cls.SocketTypeName
+        return None
+
+    @classmethod
     def fromSpec(
-        self,
+        cls,
         socketStyles: SocketStyles,
         node: Node,
         name: str,
@@ -79,10 +87,12 @@ class MultiLineTextSlot(NodeSlot):
         visualHint: str,
         isOptional: bool,
     ) -> NodeSlot | None:
-        if not self.constructableFromSpec(spec):
+        if not cls.constructableFromSpec(spec):
             return None
         default = spec[1]["default"] if "default" in spec[1] else ""
-        painter = socketStyles.getSocketPainter("STRING", visualHint, isOptional)
+        painter = socketStyles.getSocketPainter(
+            cls.SocketTypeName, visualHint, isOptional
+        )
         return MultiLineTextSlot(node, name, name, ind, painter, slotType, default)
 
     def _textChanged(self) -> None:
@@ -98,6 +108,8 @@ class MultiLineTextSlot(NodeSlot):
 
 @registerSlot
 class TextSlot(NodeSlot):
+    SocketTypeName = "STRING"
+
     def __init__(
         self,
         node: Node,
@@ -116,7 +128,7 @@ class TextSlot(NodeSlot):
             default,
             name,
             ind,
-            "STRING",
+            self.SocketTypeName,
             socketPainter,
             slotType,
             isOptional,
@@ -132,18 +144,24 @@ class TextSlot(NodeSlot):
         return self.proxy
 
     @classmethod
-    def constructableFromSpec(self, spec: Any) -> bool:
+    def constructableFromSpec(cls, spec: Any) -> bool:
         return (
             isinstance(spec, list)
             and len(spec) == 2
-            and spec[0] == "STRING"
+            and spec[0] == cls.SocketTypeName
             and isinstance(spec[1], dict)
             and ("multiline" not in spec[1] or not spec[1]["multiline"])
         )
 
     @classmethod
+    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+        if cls.constructableFromSpec(spec):
+            return cls.SocketTypeName
+        return None
+
+    @classmethod
     def fromSpec(
-        self,
+        cls,
         socketStyles: SocketStyles,
         node: Node,
         name: str,
@@ -153,10 +171,12 @@ class TextSlot(NodeSlot):
         visualHint: str,
         isOptional: bool,
     ) -> NodeSlot | None:
-        if not self.constructableFromSpec(spec):
+        if not cls.constructableFromSpec(spec):
             return None
         default = spec[1]["default"] if "default" in spec[1] else ""
-        painter = socketStyles.getSocketPainter("STRING", visualHint, isOptional)
+        painter = socketStyles.getSocketPainter(
+            cls.SocketTypeName, visualHint, isOptional
+        )
         return TextSlot(node, name, name, ind, painter, slotType, default)
 
     def _textChanged(self) -> None:

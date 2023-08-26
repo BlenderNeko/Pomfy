@@ -1,12 +1,14 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Any
 
 import PySide6.QtGui as QGui
 import PySide6.QtWidgets as QWgt
+import PySide6.QtCore as QCor
 from constants import SlotType
 
 from graphOps import GraphOp, GR_OP_STATUS, registerOp
-from graphOps.graphOp import GR_OP_STATUS
+
+from graphOps.ops.opMove import OpMove
 from nodeGUI import GrNodeSocket, PreviewEdge
 from node import NodeEdge
 
@@ -116,15 +118,74 @@ class OpAddEdge(GraphOp):
                 edge = NodeEdge(nodeView.nodeScene, outputSocket, inputSocket)
                 edge.updateConnections()
                 nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
-        # no valid target found, abort or delete
-        else:
-            if self.stored_edge is not None:
-                self.stored_edge.remove()
-                nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
+            return GR_OP_STATUS.FINISH
+        # no valid target found, prompt node creation
+
+        if self.stored_edge is not None:
+            self.stored_edge.remove()
+        self.showSearchMenu(nodeView)
+
+        return GR_OP_STATUS.NOTHING
+
+    def showSearchMenu(self, nodeView: QNodeGraphicsView) -> None:
+        assert self.dragged_edge is not None
+        factory = nodeView.nodeScene.sceneCollection.nodeFactory
+        searchMenu = factory.getDetailedSearch()
+        slotype = self.dragged_edge.socket.nodeSocket.nodeSlot.slotType
+        typeName = self.dragged_edge.socket.nodeSocket.socketType
+        searchMenu.setFilter(
+            lambda x, y: x.match(y)
+            and x.slotType != slotype
+            and x.socketType == typeName
+        )
+
+        def searchFinish(ind: int) -> None:
+            assert self.dragged_edge is not None
+            info: Any = searchMenu.items[ind]
+            nodeName: str = info.className
+            slotName: str = info.slotName
+            slotInd: int = info.slotInd
+
+            node = factory.loadNode(nodeName)
+            selected = nodeView.getSelected()
+            for item in selected:
+                item.setSelected(False)
+            node.grNode.setSelected(True)
+            node.grNode.setPos(
+                nodeView.mapToScene(nodeView.mapFromGlobal(QGui.QCursor.pos()))
+            )
+            if slotype == SlotType.INPUT:
+                socket = node.outputs[slotInd].socket
             else:
-                nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
-        nodeView.grScene.removeItem(self.dragged_edge)
-        self.stored_edge = None
-        self.dragged_edge = None
-        nodeView.nodeScene.deactivateSockets()
-        return GR_OP_STATUS.FINISH
+                socket = [x for x in node.inputs if x.name == slotName][0].socket
+
+            edge = NodeEdge(
+                nodeView.nodeScene, self.dragged_edge.socket.nodeSocket, socket
+            )
+            edge.updateConnections()
+
+            cleanup()
+
+            for op in nodeView._graphOps:
+                if isinstance(op, OpMove):
+                    op.ProcessAction(nodeView)
+            nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
+
+        def searchAbort() -> None:
+            nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
+            cleanup()
+
+        def cleanup() -> None:
+            assert self.dragged_edge is not None
+            searchMenu.abort.disconnect(searchAbort)
+            searchMenu.finished.disconnect(searchFinish)
+            nodeView.grScene.removeItem(self.dragged_edge)
+            self.stored_edge = None
+            self.dragged_edge = None
+            nodeView.nodeScene.deactivateSockets()
+            self.releaseView(nodeView)
+
+        searchMenu.abort.connect(searchAbort)
+        searchMenu.finished.connect(searchFinish)
+        searchMenu.move(QGui.QCursor.pos() + QCor.QPoint(5, -5))
+        searchMenu.show()

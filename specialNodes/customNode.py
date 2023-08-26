@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Set, Type, Any, List
+from typing import TYPE_CHECKING, Set, Type, Any, List, Tuple
 
 from node import Node
 
@@ -27,6 +27,14 @@ class CustomNode:
     def createNode(cls, factory: ComfyFactory, nodeDef: Any) -> Node:
         raise NotImplementedError()
 
+    @classmethod
+    def searchableInputs(cls) -> List[Tuple[str, str]]:
+        return []
+
+    @classmethod
+    def searchableOutputs(cls) -> List[Tuple[str, str]]:
+        return []
+
 
 _nodesToLoad: Set[Any] = set()
 
@@ -36,5 +44,5 @@ def registerCustomNode(slotCls: Type[CustomNode]) -> Type[CustomNode]:
     return slotCls
 
 
-def loadCustomNodes() -> List[CustomNode]:
+def loadCustomNodes() -> List[Type[CustomNode]]:
     return list(_nodesToLoad)

@@ -90,6 +90,10 @@ class _QSearchableMenu(QWgt.QWidget):
             self.style().unpolish(self._filteredItems[ind])
             self.style().polish(self._filteredItems[ind])
 
+    def setFilter(self, filter: Callable[[Any, str], bool]) -> None:
+        self._filterFunction = filter
+        self.filter("")
+
     def filter(self, filter_string: str) -> None:
         self._accept_hover = False
         self.update_selected(self._selected, False)
@@ -202,6 +206,7 @@ class _QSearchableMenu(QWgt.QWidget):
 
 class QSearchableMenu(QWgt.QWidget):
     finished = QCor.Signal(int)
+    abort = QCor.Signal()
     contentChanged = QCor.Signal()
 
     def __init__(
@@ -217,6 +222,7 @@ class QSearchableMenu(QWgt.QWidget):
         self._items = items
         self._renderFunction = renderFunction
         self._filterFunction = filterFunction
+        self._hasFinished = False
         self.initUI()
 
     def initUI(self) -> None:
@@ -238,22 +244,35 @@ class QSearchableMenu(QWgt.QWidget):
         self._layout.addWidget(self._filterBox)
         self._layout.addWidget(self._list)
 
+    @property
+    def items(self) -> List[Any]:
+        return self._items
+
     def indToTop(self, ind: int) -> None:
         self._list.indToTop(ind)
+
+    def setFilter(self, filter: Callable[[Any, str], bool]) -> None:
+        self._filterFunction = filter
+        self.clearText()
+        self._list.setFilter(self._filterFunction)
 
     def clearText(self) -> None:
         self._filterBox.setText("")
 
     def _onClick(self, ind: int) -> None:
-        self.finished.emit(ind)
+        self._finished(ind)
         self.close()
+
+    def _finished(self, ind: int) -> None:
+        self._hasFinished = True
+        self.finished.emit(ind)
 
     def keyPressEvent(self, event: QGui.QKeyEvent) -> None:
         if (
             event.key() == QGui.Qt.Key.Key_Return
             or event.key() == QGui.Qt.Key.Key_Enter
         ):
-            self.finished.emit(self._list.selectedIndex)
+            self._finished(self._list.selectedIndex)
             self.close()
         elif event.key() == QGui.Qt.Key.Key_Down:
             self._list.scrollByInd(1)
@@ -264,6 +283,12 @@ class QSearchableMenu(QWgt.QWidget):
     def showEvent(self, event: QGui.QShowEvent) -> None:
         super().showEvent(event)
         self._filterBox.setFocus()
+
+    def hideEvent(self, event: QGui.QHideEvent) -> None:
+        super().hideEvent(event)
+        if not self._hasFinished:
+            self.abort.emit()
+        self._hasFinished = False
 
     def wheelEvent(self, event: QGui.QWheelEvent) -> None:
         isDown = event.angleDelta().y() > 0

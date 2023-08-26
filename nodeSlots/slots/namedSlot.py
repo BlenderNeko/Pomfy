@@ -39,6 +39,12 @@ class NamedSlot(NodeSlot):
         return isinstance(spec, list) and len(spec) == 1 and isinstance(spec[0], str)
 
     @classmethod
+    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+        if cls.constructableFromSpec(spec):
+            return spec[0]
+        return None
+
+    @classmethod
     def fromSpec(
         self,
         socketStyles: SocketStyles,

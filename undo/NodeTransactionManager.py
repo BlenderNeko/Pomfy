@@ -41,6 +41,14 @@ class NTM:
         self._redoOps: List[List[Callable[[], None]]] = []
         self._undoOps: List[List[Callable[[], None]]] = []
 
+    def undo(self) -> None:
+        if len(self._redoOps) == 0:
+            self.undoStack.undo()
+
+    def redo(self) -> None:
+        if len(self._redoOps) == 0:
+            self.undoStack.redo()
+
     def startTransaction(self) -> None:
         self._redoOps.append([])
         self._undoOps.append([])

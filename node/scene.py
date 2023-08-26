@@ -48,10 +48,10 @@ class NodeScene:
         self.nodeIds[node.nodeClass].remove(node.nodeID)
 
     def undo(self) -> None:
-        self.sceneCollection.undoStack.undo()
+        self.sceneCollection.ntm.undo()
 
     def redo(self) -> None:
-        self.sceneCollection.undoStack.redo()
+        self.sceneCollection.ntm.redo()
 
     # TODO: write functions to do graph traversal?
     def activateSockets(

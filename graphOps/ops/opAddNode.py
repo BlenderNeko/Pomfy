@@ -35,13 +35,18 @@ class OpAddNode(GraphOp):
 
     def doAction(self, nodeView: QNodeGraphicsView) -> GR_OP_STATUS:
         self.nodeView: QNodeGraphicsView | None = nodeView
-        menu = nodeView.nodeScene.sceneCollection.nodeFactory.GenerateMenu(
-            self.onCreate
+        nodeView.nodeScene.sceneCollection.ntm.startTransaction()
+        self.grabView(nodeView)
+        nodeView.nodeScene.sceneCollection.nodeFactory.requestAddNode(
+            self.onCreate, self.onAbort
         )
-        with nodeView.nodeScene.sceneCollection.ntm:
-            menu.exec(QGui.QCursor.pos())
+        return GR_OP_STATUS.NOTHING
 
-        return GR_OP_STATUS.FINISH
+    def onAbort(self) -> None:
+        assert self.nodeView is not None
+        self.nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
+        self.releaseView(self.nodeView)
+        self.nodeView = None
 
     def onCreate(self, node: Node) -> None:
         assert self.nodeView is not None
@@ -52,7 +57,9 @@ class OpAddNode(GraphOp):
         node.grNode.setPos(
             self.nodeView.mapToScene(self.nodeView.mapFromGlobal(QGui.QCursor.pos()))
         )
+        self.releaseView(self.nodeView)
         for op in self.nodeView._graphOps:
             if isinstance(op, OpMove):
                 op.ProcessAction(self.nodeView)
+        self.nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
         self.nodeView = None

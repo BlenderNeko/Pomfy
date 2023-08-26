@@ -72,6 +72,8 @@ class NumSlot(NodeSlot, Generic[T]):
 
 @registerSlot
 class IntSlot(NumSlot[int]):
+    SocketTypeName = "INT"
+
     def __init__(
         self,
         node: Node,
@@ -92,7 +94,7 @@ class IntSlot(NumSlot[int]):
             default,
             name,
             ind,
-            "INT",
+            self.SocketTypeName,
             socketPainter,
             slotType,
             min,
@@ -104,17 +106,23 @@ class IntSlot(NumSlot[int]):
         )
 
     @classmethod
-    def constructableFromSpec(self, spec: Any) -> bool:
+    def constructableFromSpec(cls, spec: Any) -> bool:
         return (
             isinstance(spec, list)
             and len(spec) == 2
-            and spec[0] == "INT"
+            and spec[0] == cls.SocketTypeName
             and isinstance(spec[1], dict)
         )
 
     @classmethod
+    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+        if cls.constructableFromSpec(spec):
+            return cls.SocketTypeName
+        return None
+
+    @classmethod
     def fromSpec(
-        self,
+        cls,
         socketStyles: SocketStyles,
         node: Node,
         name: str,
@@ -124,14 +132,16 @@ class IntSlot(NumSlot[int]):
         visualHint: str,
         isOptional: bool,
     ) -> NodeSlot | None:
-        if not self.constructableFromSpec(spec):
+        if not cls.constructableFromSpec(spec):
             return None
         default = spec[1]["default"] if "default" in spec[1] else 0.0
         min = spec[1]["min"] if "min" in spec[1] else None
         max = spec[1]["max"] if "max" in spec[1] else None
         step = spec[1]["step"] if "step" in spec[1] else None
 
-        painter = socketStyles.getSocketPainter("INT", visualHint, isOptional)
+        painter = socketStyles.getSocketPainter(
+            cls.SocketTypeName, visualHint, isOptional
+        )
 
         return IntSlot(
             node,
@@ -156,6 +166,8 @@ class IntSlot(NumSlot[int]):
 
 @registerSlot
 class FloatSlot(NumSlot[Decimal]):
+    SocketTypeName = "FLOAT"
+
     def __init__(
         self,
         node: Node,
@@ -176,7 +188,7 @@ class FloatSlot(NumSlot[Decimal]):
             default,
             name,
             ind,
-            "FLOAT",
+            self.SocketTypeName,
             socketPainter,
             slotType,
             min,
@@ -188,17 +200,23 @@ class FloatSlot(NumSlot[Decimal]):
         )
 
     @classmethod
-    def constructableFromSpec(self, spec: Any) -> bool:
+    def constructableFromSpec(cls, spec: Any) -> bool:
         return (
             isinstance(spec, list)
             and len(spec) == 2
-            and spec[0] == "FLOAT"
+            and spec[0] == cls.SocketTypeName
             and isinstance(spec[1], dict)
         )
 
     @classmethod
+    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+        if cls.constructableFromSpec(spec):
+            return cls.SocketTypeName
+        return None
+
+    @classmethod
     def fromSpec(
-        self,
+        cls,
         socketStyles: SocketStyles,
         node: Node,
         name: str,
@@ -208,14 +226,16 @@ class FloatSlot(NumSlot[Decimal]):
         visualHint: str,
         isOptional: bool,
     ) -> NodeSlot | None:
-        if not self.constructableFromSpec(spec):
+        if not cls.constructableFromSpec(spec):
             return None
         default = spec[1]["default"] if "default" in spec[1] else 0.0
         min = spec[1]["min"] if "min" in spec[1] else None
         max = spec[1]["max"] if "max" in spec[1] else None
         step = spec[1]["step"] if "step" in spec[1] else None
 
-        painter = socketStyles.getSocketPainter("FLOAT", visualHint, isOptional)
+        painter = socketStyles.getSocketPainter(
+            cls.SocketTypeName, visualHint, isOptional
+        )
 
         return FloatSlot(
             node,

@@ -57,9 +57,15 @@ class GraphOp:
             return
         result = self.doAction(nodeView)
         if GR_OP_STATUS.START in result:
-            nodeView.activeOp = self
+            self.grabView(nodeView)
         elif GR_OP_STATUS.FINISH in result and nodeView.activeOp == self:
-            nodeView.activeOp = None
+            self.releaseView(nodeView)
+
+    def grabView(self, nodeView: QNodeGraphicsView) -> None:
+        nodeView.activeOp = self
+
+    def releaseView(self, nodeView: QNodeGraphicsView) -> None:
+        nodeView.activeOp = None
 
     def doAction(self, nodeView: QNodeGraphicsView) -> GR_OP_STATUS:
         return GR_OP_STATUS.NOTHING

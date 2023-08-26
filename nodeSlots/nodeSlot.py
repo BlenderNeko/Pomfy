@@ -56,6 +56,10 @@ class NodeSlot:
         raise NotImplementedError()
 
     @classmethod
+    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+        raise NotImplementedError()
+
+    @classmethod
     def fromSpec(
         self,
         socketStyles: SocketStyles,

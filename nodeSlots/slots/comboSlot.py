@@ -47,7 +47,17 @@ class ComboSlot(NodeSlot):
 
     @classmethod
     def constructableFromSpec(self, spec: Any) -> bool:
-        return isinstance(spec, list) and len(spec) == 1 and isinstance(spec[0], list)
+        return (
+            isinstance(spec, list)
+            and isinstance(spec[0], list)
+            and (len(spec) == 1 or isinstance(spec[1], dict))
+        )
+
+    @classmethod
+    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+        if cls.constructableFromSpec(spec):
+            return "COMBO"
+        return None
 
     @classmethod
     def fromSpec(
