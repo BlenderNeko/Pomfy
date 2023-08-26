@@ -156,12 +156,15 @@ class OpAddEdge(GraphOp):
             )
             if slotype == SlotType.INPUT:
                 socket = node.outputs[slotInd].socket
+                edge = NodeEdge(
+                    nodeView.nodeScene, socket, self.dragged_edge.socket.nodeSocket
+                )
             else:
                 socket = [x for x in node.inputs if x.name == slotName][0].socket
+                edge = NodeEdge(
+                    nodeView.nodeScene, self.dragged_edge.socket.nodeSocket, socket
+                )
 
-            edge = NodeEdge(
-                nodeView.nodeScene, self.dragged_edge.socket.nodeSocket, socket
-            )
             edge.updateConnections()
 
             cleanup()
