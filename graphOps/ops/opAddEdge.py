@@ -99,6 +99,7 @@ class OpAddEdge(GraphOp):
                     )
                     edge.updateConnections()
                     nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
+                self.stored_edge = None
             # no existing edge, create new edge
             else:
                 # in case either of the sockets is in or output socket, put them in the correct spot
@@ -118,14 +119,26 @@ class OpAddEdge(GraphOp):
                 edge = NodeEdge(nodeView.nodeScene, outputSocket, inputSocket)
                 edge.updateConnections()
                 nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
-            return GR_OP_STATUS.FINISH
+            self.cleanupOp(nodeView)
+            return GR_OP_STATUS.NOTHING
         # no valid target found, prompt node creation
 
         if self.stored_edge is not None:
             self.stored_edge.remove()
+            self.stored_edge = None
         self.showSearchMenu(nodeView)
 
         return GR_OP_STATUS.NOTHING
+
+    def cleanupOp(self, nodeView: QNodeGraphicsView) -> None:
+        assert self.dragged_edge is not None
+        if self.stored_edge is not None:
+            self.stored_edge.remove()
+        nodeView.grScene.removeItem(self.dragged_edge)
+        self.stored_edge = None
+        self.dragged_edge = None
+        nodeView.nodeScene.deactivateSockets()
+        self.releaseView(nodeView)
 
     def showSearchMenu(self, nodeView: QNodeGraphicsView) -> None:
         assert self.dragged_edge is not None
@@ -182,11 +195,7 @@ class OpAddEdge(GraphOp):
             assert self.dragged_edge is not None
             searchMenu.abort.disconnect(searchAbort)
             searchMenu.finished.disconnect(searchFinish)
-            nodeView.grScene.removeItem(self.dragged_edge)
-            self.stored_edge = None
-            self.dragged_edge = None
-            nodeView.nodeScene.deactivateSockets()
-            self.releaseView(nodeView)
+            self.cleanupOp(nodeView)
 
         searchMenu.abort.connect(searchAbort)
         searchMenu.finished.connect(searchFinish)
