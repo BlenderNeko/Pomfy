@@ -161,7 +161,7 @@ class AddNodePopup:
         menu = self._factory.GenerateMenu(self._menuSuccess)
         menu.move(QGui.QCursor.pos() + QCor.QPoint(5, -5))
         menu.exec()
-        if not self._success and not self._search:
+        if not self._success and not self._performSearch:
             self._cleanup()
             self._onFail()
 
