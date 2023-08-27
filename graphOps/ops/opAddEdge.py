@@ -28,6 +28,8 @@ class OpAddEdge(GraphOp):
         super().__init__([], 1, False)
         self.dragged_edge: PreviewEdge | None = None
         self.stored_edge: NodeEdge | None = None
+        self.startPos: QCor.QPointF
+        self.dragging = False
 
     def onMouseDown(
         self, event: QGui.QMouseEvent, nodeView: QNodeGraphicsView
@@ -39,13 +41,13 @@ class OpAddEdge(GraphOp):
             obj = nodeView.itemAt(event.pos())
             # if user pressed a a socket
             if obj is not None and isinstance(obj, GrNodeSocket):
+                self.startPos = event.position()
                 nodeView.nodeScene.sceneCollection.ntm.startTransaction()
                 # get preview edge, and potentially already connected edge in case of input sockets
                 self.dragged_edge, self.stored_edge = obj.nodeSocket.getEdge()
                 # temp hide connected edge
                 if self.stored_edge is not None:
                     nodeView.grScene.removeItem(self.stored_edge.grEdge)
-                nodeView.grScene.addItem(self.dragged_edge)
                 # look for potential target sockets
                 nodeView.nodeScene.activateSockets(
                     self.dragged_edge.socket.nodeSocket,
@@ -66,11 +68,16 @@ class OpAddEdge(GraphOp):
         self, event: QGui.QMouseEvent, nodeView: QNodeGraphicsView
     ) -> GR_OP_STATUS:
         if self.dragged_edge is not None:
-            obj = self.findSocket(nodeView.items(event.pos()))
-            pos = nodeView.mapToScene(event.pos())
-            if obj is not None and obj.nodeSocket.active:
-                pos = obj.nodeSocket.scenePosition
-            self.dragged_edge.toMouse(pos)
+            if not self.dragging:
+                if (self.startPos - event.position()).manhattanLength() > 20:
+                    self.dragging = True
+                    nodeView.grScene.addItem(self.dragged_edge)
+            else:
+                obj = self.findSocket(nodeView.items(event.pos()))
+                pos = nodeView.mapToScene(event.pos())
+                if obj is not None and obj.nodeSocket.active:
+                    pos = obj.nodeSocket.scenePosition
+                self.dragged_edge.toMouse(pos)
         return GR_OP_STATUS.NOTHING
 
     def onMouseUp(
@@ -81,6 +88,12 @@ class OpAddEdge(GraphOp):
 
         if self.stored_edge is not None:
             nodeView.grScene.addItem(self.stored_edge.grEdge)
+
+        if not self.dragging:
+            nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
+            self.stored_edge = None
+            self.cleanupOp(nodeView)
+            return GR_OP_STATUS.FINISH
 
         obj = self.findSocket(nodeView.items(event.pos()))
         if obj is not None and obj.nodeSocket.active:
@@ -134,7 +147,9 @@ class OpAddEdge(GraphOp):
         assert self.dragged_edge is not None
         if self.stored_edge is not None:
             self.stored_edge.remove()
-        nodeView.grScene.removeItem(self.dragged_edge)
+        if self.dragging:
+            nodeView.grScene.removeItem(self.dragged_edge)
+            self.dragging = False
         self.stored_edge = None
         self.dragged_edge = None
         nodeView.nodeScene.deactivateSockets()
