@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Tuple, TYPE_CHECKING, cast
+from customWidgets.elidedGraphicsItem import QGraphicsElidedTextItem
 from nodeGUI.edge import PreviewEdge
 from server import ComfyPromptManager, NodeAddress, NodeResult, PartialPrompt
 
@@ -85,10 +86,13 @@ class RerouteNode(Node, CustomNode):
         state: Dict[str, Any] = {}
         state["position"] = self.grNode.pos().toTuple()
         state["nodeClass"] = self.nodeClass
+        state["title"] = self.title
         return state
 
     def loadState(self, state: Dict[str, Any]) -> None:
         self.grNode.setPos(QCor.QPointF(*state["position"]))
+        if "title" in state:
+            self.setTitle(state["title"])
 
     def execute(
         self, promptManager: ComfyPromptManager
@@ -118,6 +122,20 @@ class GrRerouteNode(BaseGrNode):
             ]
         )
         self.initUI()
+        self.initTitle()
+
+    def initTitle(self) -> None:
+        self.title_label = QGraphicsElidedTextItem(
+            self.node.title,
+            200,
+            20,
+            parent=self,
+        )
+        self.title_label.setAlignedPos(-self.title_label.textWidth / 2, -30)
+
+    def changeTitle(self, title: str) -> None:
+        self.title_label.rawText = title
+        self.title_label.setAlignedPos(-self.title_label.textWidth / 2, -30)
 
     def initUI(self) -> None:
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)

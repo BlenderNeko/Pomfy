@@ -94,6 +94,9 @@ class BaseGrNode(QWgt.QGraphicsItem):
     def updateSlots(self) -> None:
         pass
 
+    def changeTitle(self, title: str) -> None:
+        pass
+
     @property
     def activeNode(self) -> bool:
         return self._active
@@ -211,6 +214,9 @@ class GrNode(BaseGrNode):
             parent=self,
         )
         self.title_label.setAlignedPos(self._padding, 0)
+
+    def changeTitle(self, title: str) -> None:
+        self.title_label.rawText = title
 
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self.width, self.height).normalized()

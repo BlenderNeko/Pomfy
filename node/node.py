@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List, Callable, Dict, Any, Tuple
 from server import ComfyPromptManager, NodeAddress, NodeResult, PartialPrompt
 
 from PySide6.QtCore import QPointF
+import PySide6.QtWidgets as QWgt
 
 from constants import SlotType
 
@@ -48,6 +49,16 @@ class Node:
     @property
     def outputs(self) -> List[NodeSlot]:
         return self._outputs
+
+    def generateSettings(self) -> List[Tuple[str, QWgt.QWidget]]:
+        titleEdit = QWgt.QLineEdit()
+        titleEdit.setText(self.title)
+        titleEdit.textEdited.connect(self.setTitle)
+        return [("Title", titleEdit)]
+
+    def setTitle(self, title: str) -> None:
+        self.title = title
+        self.grNode.changeTitle(title)
 
     def remove(self) -> None:
         for slot in self.inputs:
@@ -122,12 +133,15 @@ class Node:
         state["position"] = self.grNode.pos().toTuple()
         state["width"] = self.grNode.width
         state["nodeClass"] = self.nodeClass
+        state["title"] = self.title
         return state
 
     # TODO: proper error stuff
     def loadState(self, state: Dict[str, Any]) -> None:
         self.grNode.resize(state["width"])
         self.grNode.setPos(QPointF(*state["position"]))
+        if "title" in state:
+            self.setTitle(state["title"])
         for slotState in state["input"]:
             for x in self.inputs:
                 if (

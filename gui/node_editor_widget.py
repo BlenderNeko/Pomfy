@@ -1,5 +1,9 @@
-from server import ComfyConnection
-from node.factory import ComfyFactory
+from typing import Optional
+import PySide6.QtCore
+import PySide6.QtGui
+import PySide6.QtWidgets
+from gui.nodeInfoPanel import NodeInfoPanel
+from gui.sidePanel import SidePanel
 from gui.view import QNodeGraphicsView
 
 # from node_reroute import RerouteNode
@@ -28,12 +32,28 @@ class QNodeEditor(QWgt.QWidget):
 
     def _initUI(self) -> None:
         # set layout
-        self._layout = QWgt.QVBoxLayout()
+        self._layout = QWgt.QHBoxLayout()
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
 
         # create view
         self.view = QNodeGraphicsView(self.sceneCollection.collection.activeScene)
+        self.sideTabs = QWgt.QTabBar()
+        self.sideTabs.setShape(QWgt.QTabBar.Shape.RoundedEast)
+        self.sideTabs.setDrawBase(False)
+        self.sideTabs.addTab("Prompt")
+        self.sideTabs.addTab("Sub Trees")
+        self.sideTabs.addTab("Node Settings")
+        self.sideTabs.currentChanged.connect(self.tabChanged)
+
+        self.sidePanel = SidePanel()
+        self.nodeSettingsPanel = NodeInfoPanel(self.sidePanel)
+        self.nodeSettingsPanel.setContent([])
+
+        self.sidePanel.addWidget(self.nodeSettingsPanel)
+        self.sidePanel.addWidget(self.nodeSettingsPanel)
+        self.sidePanel.addWidget(self.nodeSettingsPanel)
+        self.sidePanel.setActive(0)
 
         # OpenGl acceleration
         if self.accelerate:
@@ -48,3 +68,26 @@ class QNodeEditor(QWgt.QWidget):
             self.view.setViewport(self.gl)
 
         self._layout.addWidget(self.view)
+        self._layout.addWidget(self.sideTabs)
+        self._layout.setAlignment(self.sideTabs, QCor.Qt.AlignmentFlag.AlignTop)
+        self.sidePanel.setParent(self)
+        self.sidePanel.setMinimumWidth(250)
+        self.sidePanel.move(self.width() - self.sidePanel.width() - 10, 10)
+        self.view.activeNodeChanged.connect(self.activeNodeChange)
+
+    def resizeEvent(self, event: QGui.QResizeEvent) -> None:
+        self.sidePanel.move(self.view.width() - self.sidePanel.width() - 10, 10)
+        super().resizeEvent(event)
+
+    def tabChanged(self, ind: int) -> None:
+        self.sidePanel.setActive(ind)
+
+    def activeNodeChange(self) -> None:
+        node = self.view.activeNode
+        print(node)
+        if node is not None:
+            self.nodeSettingsPanel.setContent(node.generateSettings())
+        else:
+            self.nodeSettingsPanel.setContent([])
+        self.nodeSettingsPanel.adjustSize()
+        self.sidePanel.adjustSize()

@@ -36,7 +36,6 @@ class OpActive(GraphOp):
             and event.modifiers() == KeyboardModifier.NoModifier
         ):
             nodeView.setDragMode(QWgt.QGraphicsView.DragMode.RubberBandDrag)
-            nodeView.activeNode = None
             item = nodeView.itemAt(event.pos())
             if not isinstance(item, BaseGrNode):
                 while item is not None:
@@ -45,11 +44,11 @@ class OpActive(GraphOp):
                         break
             if item is not None:
                 selected = nodeView.getSelected()
-                # TODO: why does mypy complain?
-                nodeView.activeNode = item  # type: ignore
                 for s in selected:
                     s.setSelected(False)
                 item.setSelected(True)
+            # TODO: why does mypy complain?
+            nodeView.activeNode = item  # type: ignore
 
             return GR_OP_STATUS.FINISH
         return GR_OP_STATUS.NOTHING

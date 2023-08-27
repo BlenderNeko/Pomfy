@@ -26,6 +26,8 @@ import PySide6.QtWidgets as QWgt
 
 
 class QNodeGraphicsView(QWgt.QGraphicsView):
+    activeNodeChanged = QCor.Signal()
+
     @property
     def activeOp(self) -> GraphOp | None:
         return self._activeOp
@@ -50,10 +52,10 @@ class QNodeGraphicsView(QWgt.QGraphicsView):
         self._dragged_edge: NodeEdge | None = None
 
         # zoom settings
-        self.zoomInFac = 1.25
-        self.zoom = 8
+        self.zoomInFac = 1.1
+        self.zoom = 15
         self.zoomStep = 1
-        self.zoomRange = (0, 12)
+        self.zoomRange = (0, 25)
 
         self._activeOp = None
         self._activeNode: BaseGrNode | None = None
@@ -76,6 +78,7 @@ class QNodeGraphicsView(QWgt.QGraphicsView):
         self._activeNode = value
         if value is not None:
             value.activeNode = True
+        self.activeNodeChanged.emit()
 
     def initUI(self) -> None:
         self.setRenderHints(
