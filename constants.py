@@ -33,3 +33,9 @@ class SocketShape(Enum):
     HOLLOW_DIAMOND = 4
     SQUARE = 5
     HOLLOW_SQUARE = 6
+
+
+class ConnectionChangedType(Enum):
+    REMOVED = 0
+    ADDED = 1
+    ALTERED = 2

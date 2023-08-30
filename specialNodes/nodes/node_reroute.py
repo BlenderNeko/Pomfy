@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from PySide6.QtWidgets import QGraphicsItem
 
-from constants import SLOT_MIN_HEIGHT, SOCKET_RADIUS, SocketShape
+from constants import SLOT_MIN_HEIGHT, SOCKET_RADIUS, ConnectionChangedType, SocketShape
 from customWidgets.QSlotContentGraphicsItem import QSlotContentGraphicsItem
 
 from nodeGUI import BaseGrNode
@@ -319,30 +319,36 @@ class RerouteSocket(NodeSocket):
                 sockets.extend(con.edge.travelFrom(self).resolveConnected(origin))
         return sockets
 
-    def triggerConnectionChange(self, edge: NodeEdge) -> None:
+    def triggerConnectionChange(
+        self, edge: NodeEdge | None, cType: ConnectionChangedType
+    ) -> None:
         if self.outputConnection is not None:
             # If we're directional, simply figure out which way to send event
             if edge == self.outputConnection:
                 for con in self.rerouteConnections:
                     if con.edge is not edge:
-                        con.edge.travelFrom(self).triggerConnectionChange(con.edge)
+                        con.edge.travelFrom(self).triggerConnectionChange(
+                            con.edge, cType
+                        )
             else:
                 self.outputConnection.travelFrom(self).triggerConnectionChange(
-                    self.outputConnection
+                    self.outputConnection, cType
                 )
             return
         # If we're not directional, find out if we used to be
+        if cType != ConnectionChangedType.REMOVED or edge is None:
+            return
         target = edge.travelFrom(self)
         if (isinstance(target, RerouteSocket) and target.outputConnection is None) or (
             not isinstance(target, RerouteSocket)
             and target.nodeSlot.slotType == SlotType.INPUT
         ):
-            # target is either an input socket or an undirected reroute, edge wan't an output connection
+            # target is either an input socket or an undirected reroute, edge wasn't an output connection
             # we weren't directional
             return
         # edge used to be our output connection, send things forwards
         for con in self.rerouteConnections:
-            con.edge.travelFrom(self).triggerConnectionChange(con.edge)
+            con.edge.travelFrom(self).triggerConnectionChange(con.edge, cType)
 
     def getEdge(self) -> Tuple[PreviewEdge, NodeEdge | None]:
         return (PreviewEdge(self.grNodeSocket), None)

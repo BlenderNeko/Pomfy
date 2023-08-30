@@ -16,6 +16,8 @@ from customWidgets.QNumSpinner import QNumSpinner
 
 if TYPE_CHECKING:
     from node.factory import ComfyFactory
+    from node.socket import NodeSocket
+    from node.socket import ConnectionChangedEvent
 
 from node import Node, NodeScene
 from nodeSlots.slots.numSlot import FloatSlot, IntSlot, NumSlot
@@ -42,7 +44,7 @@ class NumPrimitive(Node, CustomNode, Generic[T]):
     def getCategory(cls) -> str | None:
         return "Input"
 
-    def recalcSpinnerSettings(self) -> None:
+    def recalcSpinnerSettings(self, cce: ConnectionChangedEvent) -> None:
         slots = []
         slot: NumSlot[T] = cast(NumSlot[T], self.outputs[0])
         for socket in slot.socket.getConnected():

@@ -77,7 +77,7 @@ class NTM:
         self._redoOps[-1].extend(redoOps)
         self._undoOps[-1].extend(undoOps)
 
-    def doStep(self, redo: Callable[[], None], undo: Callable[[], None]) -> None:
+    def doStep(self, redo: Callable[[], Any], undo: Callable[[], Any]) -> None:
         if len(self._redoOps) == 0:
             return redo()
         redo()

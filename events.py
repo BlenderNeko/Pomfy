@@ -1,28 +1,34 @@
-from typing import Any, Set, List, Callable, cast
+from typing import Any, Set, List, Callable, Generic, TypeVar, cast
 import weakref
 
+T = TypeVar("T", bound=Callable[..., None])
 
-class Event:
+
+class Event(Generic[T]):
+    def asTypedCallback(f: Callable) -> T:
+        return cast(T, f)
+
     def __init__(self) -> None:
         self._callbacks: Set[weakref.WeakMethod] = set()
 
-    def add(self, func: Callable) -> None:
+    def add(self, func: T) -> None:
         self._callbacks.add(weakref.WeakMethod(func))
 
-    def remove(self, func: Callable) -> None:
-        self._callbacks.remove(cast(weakref.WeakMethod, func))
+    def remove(self, func: T) -> None:
+        self._callbacks.remove(weakref.WeakMethod(func))
 
-    def __iadd__(self, other: Callable) -> "Event":
+    def __iadd__(self, other: T) -> "Event":
         self.add(other)
         return self
 
-    def __isub__(self, other: Callable) -> "Event":
+    def __isub__(self, other: T) -> "Event":
         self.remove(other)
         return self
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
+    @asTypedCallback
+    def __call__(self, *args: Any, **kwds: Any) -> None:
         toRemove: List[weakref.WeakMethod] = []
-        for ref in self._callbacks:
+        for ref in list(self._callbacks):
             r = ref()
             if r is None:
                 toRemove.append(ref)
@@ -30,9 +36,9 @@ class Event:
             if len(args) == 0 and len(kwds) == 0:
                 r()
             elif len(kwds) == 0:
-                r(args)
+                r(*args)
             elif len(args) == 0:
-                r(kwds)
+                r(**kwds)
             else:
                 r(args, kwds)
         for ref in toRemove:

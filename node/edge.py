@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Any, Union, Dict
 
-from constants import SlotType
+from constants import ConnectionChangedType, SlotType
 
 if TYPE_CHECKING:
     from node import Node, NodeSocket, NodeScene
@@ -46,8 +46,8 @@ class NodeEdge:
         self._nodeScene.addEdge(self)
         outputSocket.addEdge(self)
         inputSocket.addEdge(self)
-        outputSocket.triggerConnectionChange(self)
-        inputSocket.triggerConnectionChange(self)
+        outputSocket.triggerConnectionChange(self, ConnectionChangedType.ADDED)
+        inputSocket.triggerConnectionChange(self, ConnectionChangedType.ADDED)
         self.updateConnections()
 
     def remove(self) -> None:
@@ -56,8 +56,8 @@ class NodeEdge:
         self._outputSocket.removeEdge(self)
         input = self.inputSocket
         output = self.outputSocket
-        output.triggerConnectionChange(self)
-        input.triggerConnectionChange(self)
+        output.triggerConnectionChange(self, ConnectionChangedType.REMOVED)
+        input.triggerConnectionChange(self, ConnectionChangedType.REMOVED)
         self.ntm.doStep(
             lambda: self._setSockets(None, None),  # type: ignore
             lambda: self._setSockets(input, output),
@@ -111,12 +111,12 @@ class NodeEdge:
             return None
         state["inputSocket"] = {
             "node": nodeMapping[self.inputSocket.nodeSlot.node],
-            "slotName": self.inputSocket.nodeSlot.name,
+            "slotName": self.inputSocket.nodeSlot._name,
             "slotInd": self.inputSocket.nodeSlot.ind,
         }
         state["outputSocket"] = {
             "node": nodeMapping[self.outputSocket.nodeSlot.node],
-            "slotName": self.outputSocket.nodeSlot.name,
+            "slotName": self.outputSocket.nodeSlot._name,
             "slotInd": self.outputSocket.nodeSlot.ind,
         }
         state["typeName"] = self.outputSocket.socketType

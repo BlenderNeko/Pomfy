@@ -9,10 +9,23 @@ if TYPE_CHECKING:
     from node import Node
 
 from node import NodeEdge
-from constants import SlotType
+from constants import ConnectionChangedType, SlotType
 from nodeGUI import GrNodeSocket
 from PySide6.QtCore import QPointF
 from events import Event
+from enum import Enum
+
+
+class ConnectionChangedEvent:
+    def __init__(
+        self,
+        socket: "NodeSocket",
+        edge: NodeEdge | None,
+        changedType: ConnectionChangedType,
+    ) -> None:
+        self.socket = socket
+        self.edge = edge
+        self.changedType = changedType
 
 
 class NodeSocket:
@@ -49,13 +62,17 @@ class NodeSocket:
         self._edges: List[NodeEdge] = []
         self.ntm = self.nodeSlot.node.nodeScene.sceneCollection.ntm
         self.grNodeSocket = self.createGUI(socketPainter)
-        self.onConnectionChanged: Event = Event()
+        self.onConnectionChanged: Event[
+            Callable[[ConnectionChangedEvent], None]
+        ] = Event()
 
     def createGUI(self, socketPainter: SocketPainter) -> GrNodeSocket:
         return GrNodeSocket(self, socketPainter)
 
-    def triggerConnectionChange(self, edge: NodeEdge) -> None:
-        self.onConnectionChanged()
+    def triggerConnectionChange(
+        self, edge: NodeEdge | None, cType: ConnectionChangedType
+    ) -> None:
+        self.onConnectionChanged(ConnectionChangedEvent(self, edge, cType))
 
     def getConnected(self) -> List[NodeSocket]:
         sockets: List[NodeSocket] = []
