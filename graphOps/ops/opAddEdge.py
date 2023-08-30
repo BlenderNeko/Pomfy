@@ -137,16 +137,14 @@ class OpAddEdge(GraphOp):
         # no valid target found, prompt node creation
 
         if self.stored_edge is not None:
+            # don't set it to none just yet, we need to know if it existed
             self.stored_edge.remove()
-            self.stored_edge = None
         self.showSearchMenu(nodeView)
 
         return GR_OP_STATUS.NOTHING
 
     def cleanupOp(self, nodeView: QNodeGraphicsView) -> None:
         assert self.dragged_edge is not None
-        if self.stored_edge is not None:
-            self.stored_edge.remove()
         if self.dragging:
             nodeView.grScene.removeItem(self.dragged_edge)
             self.dragging = False
@@ -203,7 +201,12 @@ class OpAddEdge(GraphOp):
             nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
 
         def searchAbort() -> None:
-            nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
+            if self.stored_edge is not None:
+                # if we had a stored edge, finalize its deletion, otherwise abort
+                self.stored_edge = None
+                nodeView.nodeScene.sceneCollection.ntm.finalizeTransaction()
+            else:
+                nodeView.nodeScene.sceneCollection.ntm.abortTransaction()
             cleanup()
 
         def cleanup() -> None:
