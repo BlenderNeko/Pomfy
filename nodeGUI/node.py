@@ -13,6 +13,7 @@ from customWidgets.elidedGraphicsItem import QGraphicsElidedTextItem
 
 if TYPE_CHECKING:
     from node import Node
+    from nodeSlots.nodeSlot import NodeSlot
 
 
 class ResizeEnum(Flag):
@@ -89,6 +90,9 @@ class BaseGrNode(QWgt.QGraphicsItem):
         pass
 
     def setSlots(self) -> None:
+        pass
+
+    def unsetSlot(self, slot: NodeSlot) -> None:
         pass
 
     def updateSlots(self) -> None:
@@ -189,6 +193,10 @@ class GrNode(BaseGrNode):
             slot.grNodeSlot.width = self.width
             slot.socket.grNodeSocket.setParentItem(self)
         self.updateSlots()
+
+    def unsetSlot(self, slot: NodeSlot) -> None:
+        self.node.nodeScene.grScene.removeItem(slot.grNodeSlot)
+        self.node.nodeScene.grScene.removeItem(slot.socket.grNodeSocket)
 
     def updateSlots(self) -> None:
         pos = 30.0

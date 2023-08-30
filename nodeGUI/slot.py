@@ -32,6 +32,11 @@ class GrNodeSlot(QWgt.QGraphicsItem):
     def setShowContent(self, value: bool) -> None:
         self.showContent = value
 
+    def remove(self) -> None:
+        if self._content is not None:
+            self.nodeSlot.node.nodeScene.grScene.removeItem(self._content)
+        self.nodeSlot.node.nodeScene.grScene.removeItem(self)
+
     @property
     def width(self) -> float:
         return self._width
@@ -63,6 +68,15 @@ class GrNodeSlot(QWgt.QGraphicsItem):
         self.nodeSlot: NodeSlot = nodeSlot
 
         self.initUI()
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._name = value
+        self._label.rawText = self._name
 
     def initUI(self) -> None:
         # label

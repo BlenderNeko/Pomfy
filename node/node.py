@@ -85,8 +85,22 @@ class Node:
             self.inputs.append(slot)
         self.grNode.setSlots()
 
+    def removeInputSlot(self, slot: NodeSlot) -> None:
+        if isinstance(slot, NamedSlot):
+            self._namedInputs -= 1
+        self.inputs.remove(slot)
+        slot.socket.remove()
+        self.grNode.unsetSlot(slot)
+        self.grNode.setSlots()
+
     def addOutputSlot(self, slot: NodeSlot) -> None:
         self.outputs.append(slot)
+        self.grNode.setSlots()
+
+    def removeOutputSlot(self, slot: NodeSlot) -> None:
+        self.outputs.remove(slot)
+        slot.socket.remove()
+        self.grNode.unsetSlot(slot)
         self.grNode.setSlots()
 
     def activateSockets(
@@ -116,7 +130,7 @@ class Node:
             state["input"].append(
                 {
                     "ind": slot.ind,
-                    "name": slot.name,
+                    "name": slot._name,
                     "typeName": slot.socket.socketType,
                     "content": slot.saveState(),
                 }
@@ -125,7 +139,7 @@ class Node:
             state["output"].append(
                 {
                     "ind": slot.ind,
-                    "name": slot.name,
+                    "name": slot._name,
                     "typeName": slot.socket.socketType,
                     "content": slot.saveState(),
                 }
@@ -145,7 +159,7 @@ class Node:
         for slotState in state["input"]:
             for x in self.inputs:
                 if (
-                    x.name == slotState["name"]
+                    x._name == slotState["name"]
                     and x.socket.socketType == slotState["typeName"]
                 ):
                     x.loadState(slotState["content"])
@@ -183,7 +197,7 @@ class Node:
         slotResults: Dict[str, NodeAddress | NodeResult | None] = {}
         optional = []
         for slot in self.inputs:
-            slotResults[slot.name] = slot.execute(promptManager)
+            slotResults[slot._name] = slot.execute(promptManager)
             optional.append(slot.optional)
         for s, o in zip(slotResults.values(), optional):
             if s is None and not o:

@@ -29,7 +29,6 @@ class ComboSlot(NodeSlot):
         isOptional: bool = False,
     ):
         self.items = items
-        self.name = name
         self.default = items[0] if len(items) > 0 else ""
         super().__init__(
             node, self.default, name, ind, "COMBO", socketPainter, slotType, isOptional
@@ -37,7 +36,7 @@ class ComboSlot(NodeSlot):
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
         self.grItem = QComboSpinner(
-            self.name, 100, height, self._value_changed, self.items, self.default
+            self._name, 100, height, self._value_changed, self.items, self.default
         )
         return self.grItem
 

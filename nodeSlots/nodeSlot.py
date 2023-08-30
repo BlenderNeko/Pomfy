@@ -26,7 +26,7 @@ class NodeSlot:
         isOptional: bool = False,
         height: int = SLOT_MIN_HEIGHT,
     ) -> None:
-        self.name = name
+        self._name = name
         self.ind = ind
         self.node = node
         self.content = content
@@ -42,8 +42,17 @@ class NodeSlot:
         if slotType == SlotType.OUTPUT:
             self.node.addOutputSlot(self)
 
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._name = value
+        self.grNodeSlot.name = value
+
     def createGUI(self) -> GrNodeSlot:
-        return GrNodeSlot(self, self.grContent, self.name, self.slotType, self._height)
+        return GrNodeSlot(self, self.grContent, self._name, self.slotType, self._height)
 
     def createSocket(self, typeName: str, socketPainter: SocketPainter) -> NodeSocket:
         return NodeSocket(self, typeName, socketPainter)
