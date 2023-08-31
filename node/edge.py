@@ -46,18 +46,26 @@ class NodeEdge:
         self._nodeScene.addEdge(self)
         outputSocket.addEdge(self)
         inputSocket.addEdge(self)
-        outputSocket.triggerConnectionChange(self, ConnectionChangedType.ADDED)
-        inputSocket.triggerConnectionChange(self, ConnectionChangedType.ADDED)
+        self.ntm.doStep(
+            lambda: self._triggerChange(ConnectionChangedType.ADDED),
+            lambda: self._triggerChange(ConnectionChangedType.REMOVED),
+        )
         self.updateConnections()
+
+    def _triggerChange(self, cct: ConnectionChangedType) -> None:
+        self._outputSocket.triggerConnectionChange(self, cct)
+        self._inputSocket.triggerConnectionChange(self, cct)
 
     def remove(self) -> None:
         """Removes edge from the node scene."""
+        self.ntm.doStep(
+            lambda: self._triggerChange(ConnectionChangedType.REMOVED),
+            lambda: self._triggerChange(ConnectionChangedType.ADDED),
+        )
         self._inputSocket.removeEdge(self)
         self._outputSocket.removeEdge(self)
         input = self.inputSocket
         output = self.outputSocket
-        output.triggerConnectionChange(self, ConnectionChangedType.REMOVED)
-        input.triggerConnectionChange(self, ConnectionChangedType.REMOVED)
         self.ntm.doStep(
             lambda: self._setSockets(None, None),  # type: ignore
             lambda: self._setSockets(input, output),
@@ -102,6 +110,7 @@ class NodeEdge:
         self.grEdge.end = self.inputSocket.grNodeSocket.centerPos()
         self.grEdge.start = self.outputSocket.grNodeSocket.centerPos()
 
+    # TODO: type checking on loading
     def saveState(self, nodeMapping: Dict[Node, int]) -> Dict[str, Any] | None:
         state: Dict[str, Any] = {}
         if (
@@ -119,7 +128,7 @@ class NodeEdge:
             "slotName": self.outputSocket.nodeSlot._name,
             "slotInd": self.outputSocket.nodeSlot.ind,
         }
-        state["typeName"] = self.outputSocket.socketType
+        # state["typeName"] = self.outputSocket.socketType
         return state
 
     @classmethod
@@ -134,22 +143,16 @@ class NodeEdge:
             if (
                 slot.name == state["inputSocket"]["slotName"]
                 and slot.ind == state["inputSocket"]["slotInd"]
-                and (
-                    slot.socket.socketType == state["typeName"]
-                    or slot.socket.socketType == ""
-                )
             ):
                 inputSocket = slot.socket
+                continue
         for slot in outputNode.outputs:
             if (
                 slot.name == state["outputSocket"]["slotName"]
                 and slot.ind == state["outputSocket"]["slotInd"]
-                and (
-                    slot.socket.socketType == state["typeName"]
-                    or slot.socket.socketType == ""
-                )
             ):
                 outputSocket = slot.socket
+                continue
         if inputSocket is not None and outputSocket is not None:
             return NodeEdge(nodeScene, outputSocket, inputSocket)
         return None
