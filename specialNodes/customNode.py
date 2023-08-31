@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Set, Type, Any, List, Tuple
 
 from node import Node
+from node.socket import SocketTyping
 
 
 if TYPE_CHECKING:
@@ -28,11 +29,13 @@ class CustomNode:
         raise NotImplementedError()
 
     @classmethod
-    def searchableInputs(cls) -> List[Tuple[str, str]]:
+    def searchableInputs(cls) -> List[Tuple[str, SocketTyping]]:
+        '''returns a tuple consisting of the names and types of the inputs'''
         return []
 
     @classmethod
-    def searchableOutputs(cls) -> List[Tuple[str, str]]:
+    def searchableOutputs(cls) -> List[Tuple[str, SocketTyping]]:
+        '''returns a tuple consisting of the names and types of the outputs'''
         return []
 
 

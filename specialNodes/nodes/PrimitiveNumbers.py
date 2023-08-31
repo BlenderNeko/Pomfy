@@ -13,6 +13,7 @@ from typing import (
 )
 from constants import SlotType
 from customWidgets.QNumSpinner import QNumSpinner
+from node.socket import SocketTyping
 
 if TYPE_CHECKING:
     from node.factory import ComfyFactory
@@ -108,8 +109,8 @@ class FloatPrimitive(NumPrimitive[Decimal]):
         return node
 
     @classmethod
-    def searchableOutputs(cls) -> List[Tuple[str, str]]:
-        return [("value", "FLOAT")]
+    def searchableOutputs(cls) -> List[Tuple[str, SocketTyping]]:
+        return [("value", SocketTyping("FLOAT"))]
 
 
 @registerCustomNode
@@ -138,5 +139,5 @@ class IntPrimitive(NumPrimitive[Decimal]):
         return node
 
     @classmethod
-    def searchableOutputs(cls) -> List[Tuple[str, str]]:
-        return [("value", "INT")]
+    def searchableOutputs(cls) -> List[Tuple[str, SocketTyping]]:
+        return [("value", SocketTyping("INT"))]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Tuple, TYPE_CHECKING, cast
 from customWidgets.elidedGraphicsItem import QGraphicsElidedTextItem
+from node.socket import SocketTyping
 from nodeGUI.edge import PreviewEdge
 from server import ComfyPromptManager, NodeAddress, NodeResult, PartialPrompt
 
@@ -173,7 +174,7 @@ class RerouteSlot(NodeSlot):
             None,
             "Reroute",
             0,
-            "",
+            SocketTyping(),
             socketPainter,
             SlotType.BI,
         )
@@ -182,12 +183,16 @@ class RerouteSlot(NodeSlot):
         return None
 
     def createSocket(
-        self, typeName: str, socketPainter: SocketPainter
+        self, socketTyping: SocketTyping, socketPainter: SocketPainter
     ) -> "RerouteSocket":
         return RerouteSocket(self, socketPainter)
 
     def initContent(self, height: float) -> None:
         return None
+    
+    @property
+    def isOutput(self) -> bool:
+        return cast(RerouteSocket, self.socket).outputConnection is not None
 
     def execute(
         self, promptManager: ComfyPromptManager
@@ -203,8 +208,9 @@ class RerouteSlot(NodeSlot):
         id = promptManager.idMap[target.nodeSlot.node]
         return promptManager.outputMap[id][target.nodeSlot.ind]
 
-
+#TODO: can probably refactor get rid of this?
 class ConInfo:
+    '''container for the edge and oposite socket'''
     def __init__(self, edge: NodeEdge, socket: NodeSocket | None) -> None:
         self.edge = edge
         self.socket = socket
@@ -225,7 +231,7 @@ class RerouteSocket(NodeSocket):
         )
 
     def __init__(self, nodeSlot: NodeSlot, socketPainter: SocketPainter) -> None:
-        super().__init__(nodeSlot, "", socketPainter)
+        super().__init__(nodeSlot, SocketTyping(), socketPainter)
         self._outputConnection: NodeEdge | None = None
         self.rerouteConnections: List[ConInfo] = []
         self.typeSources: List[NodeEdge] = []
@@ -363,7 +369,7 @@ class RerouteSocket(NodeSocket):
         else:
             self.removeTypeSource(origin)
             if len(self.typeSources) == 0:
-                self.socketType = ""
+                self.socketType = SocketTyping()
         for ele in self.rerouteConnections:
             if isinstance(ele.socket, RerouteSocket) and ele.edge != origin:
                 ele.socket.propagateTypeChange(ele.edge, add)
@@ -382,55 +388,53 @@ class RerouteSocket(NodeSocket):
             self.outputConnection = None
         self._propagateOutputConnectionChange(origin, add)
 
-    def _hasOutput(self, socket: NodeSocket | None) -> Tuple[bool, NodeSocket | None]:
-        if socket is None:
-            return (False, None)
+    def _getOutputSocket(self, socket: NodeSocket) -> NodeSocket | None:
+        '''simply returns the socket if it is an output socket, the socket pointing towards the output if it is a directional reroute socket, or None'''
         if socket.nodeSlot.slotType == SlotType.OUTPUT:
-            return (True, socket)
+            return socket
         if (
             socket.nodeSlot.slotType == SlotType.BI
             and isinstance(socket, RerouteSocket)
             and socket.outputConnection is not None
         ):
-            return (True, socket.outputConnection.travelFrom(socket))
-        return (False, None)
-
-    def _getTypeName(self, socket: NodeSocket | None) -> str:
-        if socket is None:
-            return ""
-        return socket.socketType
+            return socket.outputConnection.travelFrom(socket)
+        return None
 
     def addEdge(self, edge: NodeEdge) -> None:
+        '''adds an edge to the socket'''
         opposite = edge.travelFrom(self)
 
-        rerouteConnection = None
-        for ele in self.rerouteConnections:
-            if ele.edge == edge:
-                rerouteConnection = ele
-
-        if rerouteConnection is None:
-            rerouteConnection = self.createConInfo(edge)
-
+        rerouteConnection = self.createConInfo(edge)
+        
         # get rid of potential duplicate
-        for ele in self.rerouteConnections:
-            if ele.socket == opposite and ele.edge != edge:
-                ele.edge.remove()
-                break
+        dupe = [x for x in self.rerouteConnections if x.socket == opposite and x.edge != edge]
+        for d in dupe:
+            d.edge.remove()
 
-        if self._hasOutput(opposite)[0] != self._hasOutput(rerouteConnection.socket)[0]:
-            if self._hasOutput(opposite)[0] and self._hasOutput(opposite)[1] != self:
-                if self.outputConnection is not None:
-                    self.outputConnection.remove()
-                self.outputConnection = edge
-                if edge.outputSocket != opposite:
-                    edge.swap()
-                self._propagateOutputConnectionChange(edge, True)
-            elif not self._hasOutput(opposite)[0]:
-                self.outputConnection = None
-                self._propagateOutputConnectionChange(edge, False)
+        outputSocket = None #remains None if we are not connected to an output socket somewhere
+        if opposite.nodeSlot.slotType == SlotType.OUTPUT: # set it to the oposite socket if that is an output socket
+            outputSocket = opposite
+        elif (
+            opposite.nodeSlot.slotType == SlotType.BI 
+            and isinstance(opposite, RerouteSocket)
+            and opposite.outputConnection is not None
+        ):
+            # if it is a reroute socket set it to the output socket of the output connection of the reroute (may or may not be self)
+            outputSocket = opposite.outputConnection.travelFrom(opposite)
 
-        if self._getTypeName(opposite) != self._getTypeName(rerouteConnection.socket):
-            self.propagateTypeChange(edge, self._getTypeName(opposite) != "")
+        # if not None we are directional
+        if outputSocket is not None:
+            # remove previous directional info if it existed
+            if self.outputConnection is not None:
+                self.outputConnection.remove()
+            self.outputConnection = edge
+            #swap edge if the direction is wrong (we're currently in the input spot, but are the output socket)
+            if edge.inputSocket == self and outputSocket == self:
+                edge.swap()
+            self._propagateOutputConnectionChange(edge, True)
+        
+        if len(opposite.socketType.types) > 0:
+            self.propagateTypeChange(edge, True)
 
         rerouteConnection.socket = opposite
 

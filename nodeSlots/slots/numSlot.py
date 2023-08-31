@@ -10,6 +10,7 @@ from customWidgets.QSlotContentGraphicsItem import (
 )
 
 from PySide6.QtGui import QUndoCommand
+from node.socket import SocketTyping
 
 from style.socketStyle import SocketPainter, SocketStyles
 from constants import SlotType
@@ -29,7 +30,7 @@ class NumSlot(NodeSlot, Generic[T]):
         default: T,
         name: str,
         ind: int,
-        typeName: str,
+        socketTyping: SocketTyping,
         socketPainter: SocketPainter,
         slotType: SlotType,
         min: T | None = None,
@@ -46,7 +47,7 @@ class NumSlot(NodeSlot, Generic[T]):
         self.valid: T | None = valid
         self.validOffset: T | None = validOffset
         super().__init__(
-            node, default, name, ind, typeName, socketPainter, slotType, isOptional
+            node, default, name, ind, socketTyping, socketPainter, slotType, isOptional
         )
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
@@ -94,7 +95,7 @@ class IntSlot(NumSlot[int]):
             default,
             name,
             ind,
-            self.SocketTypeName,
+            SocketTyping(self.SocketTypeName),
             socketPainter,
             slotType,
             min,
@@ -115,9 +116,9 @@ class IntSlot(NumSlot[int]):
         )
 
     @classmethod
-    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+    def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         if cls.constructableFromSpec(spec):
-            return cls.SocketTypeName
+            return SocketTyping(cls.SocketTypeName)
         return None
 
     @classmethod
@@ -188,7 +189,7 @@ class FloatSlot(NumSlot[Decimal]):
             default,
             name,
             ind,
-            self.SocketTypeName,
+            SocketTyping(self.SocketTypeName),
             socketPainter,
             slotType,
             min,
@@ -209,9 +210,9 @@ class FloatSlot(NumSlot[Decimal]):
         )
 
     @classmethod
-    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+    def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         if cls.constructableFromSpec(spec):
-            return cls.SocketTypeName
+            return SocketTyping(cls.SocketTypeName)
         return None
 
     @classmethod

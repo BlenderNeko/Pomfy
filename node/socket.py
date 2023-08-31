@@ -15,6 +15,27 @@ from PySide6.QtCore import QPointF
 from events import Event
 from enum import Enum
 
+class SocketTyping:
+    def __init__(self, *types:str) -> None:
+        self.types = types
+    
+    def checkCompat(self, outputTarget:'SocketTyping') -> bool:
+        '''check if target sockettyping is compatible'''
+        if len(self.types) == 0:
+            return True
+        for t in outputTarget.types:
+            if t not in self.types:
+                return False
+        return True
+    
+    def checkEqual(self, socketTyping: 'SocketTyping') -> bool:
+        return set(self.types) == set(socketTyping.types)
+    
+    #TODO: better printing
+    def toString(self) -> str:
+        return "\n".join(self.types[:5])
+    
+
 
 class ConnectionChangedEvent:
     def __init__(
@@ -34,12 +55,12 @@ class NodeSocket:
         return self._nodeSlot
 
     @property
-    def socketType(self) -> str:
-        return self._typeName
+    def socketType(self) -> SocketTyping:
+        return self._socketType
 
     @socketType.setter
-    def socketType(self, value: str) -> None:
-        self._typeName = value
+    def socketType(self, value: SocketTyping) -> None:
+        self._socketType = value
 
     @property
     def active(self) -> bool:
@@ -54,14 +75,14 @@ class NodeSocket:
         return self._edges
 
     def __init__(
-        self, nodeSlot: NodeSlot, typeName: str, socketPainter: SocketPainter
+        self, nodeSlot: NodeSlot, socketType: SocketTyping, socketPainter: SocketPainter
     ) -> None:
         self._nodeSlot = nodeSlot
-        self._typeName = typeName
+        self._socketType = socketType
         self._active = False
         self._edges: List[NodeEdge] = []
         self.ntm = self.nodeSlot.node.nodeScene.sceneCollection.ntm
-        self.grNodeSocket = self.createGUI(socketPainter)
+        self.grNodeSocket: GrNodeSocket = self.createGUI(socketPainter)
         self.onConnectionChanged: Event[
             Callable[[ConnectionChangedEvent], None]
         ] = Event()
@@ -117,13 +138,9 @@ class NodeSocket:
             return False
         if self.nodeSlot.node == socket.nodeSlot.node:
             return False
-        if (
-            socket.socketType != self.socketType
-            and self.socketType != ""
-            and socket.socketType != ""
-        ):
-            return False
-        return True
+        outputTarget = self if self.nodeSlot.isOutput else socket
+        inputTarget = self if self != outputTarget else socket
+        return inputTarget.socketType.checkCompat(outputTarget.socketType)
 
     def addEdge(self, edge: NodeEdge) -> None:
         # can only have a single edge connected to an input slot

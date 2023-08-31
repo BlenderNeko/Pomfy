@@ -6,6 +6,7 @@ from customWidgets.QSlotContentGraphicsItem import (
 )
 
 from PySide6.QtGui import QUndoCommand
+from node.socket import SocketTyping
 
 from style.socketStyle import SocketPainter, SocketStyles
 from constants import SlotType
@@ -31,7 +32,7 @@ class ComboSlot(NodeSlot):
         self.items = items
         self.default = items[0] if len(items) > 0 else ""
         super().__init__(
-            node, self.default, name, ind, "COMBO", socketPainter, slotType, isOptional
+            node, self.default, name, ind, SocketTyping("COMBO"), socketPainter, slotType, isOptional
         )
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
@@ -53,9 +54,9 @@ class ComboSlot(NodeSlot):
         )
 
     @classmethod
-    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+    def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         if cls.constructableFromSpec(spec):
-            return "COMBO"
+            return SocketTyping("COMBO")
         return None
 
     @classmethod

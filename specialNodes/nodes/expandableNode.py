@@ -4,6 +4,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from constants import SlotType
+from node.socket import SocketTyping
 
 if TYPE_CHECKING:
     from node.socket import NodeSocket, ConnectionChangedEvent
@@ -70,7 +71,7 @@ class ExpandableNode(Node):
         socket.onConnectionChanged += self._expand
         newSlot.socket.onConnectionChanged -= self._expand
         socket.nodeSlot.name = ""
-        socket.socketType = ""
+        socket.socketType = SocketTyping()
         socket.grNodeSocket.socketPainter = painter
         if newSlot.slotType == SlotType.OUTPUT:
             self.removeOutputSlot(newSlot)

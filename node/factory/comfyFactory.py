@@ -12,6 +12,7 @@ import PySide6.QtWidgets
 from constants import SlotType, SocketShape
 from customWidgets.QSearchableList import QSearchableMenu
 from node import Node, NodeScene
+from node.socket import SocketTyping
 from nodeSlots import NodeSlot, loadSlots
 from nodeSlots.slots.namedSlot import NamedSlot
 from style.socketStyle import SocketStyles
@@ -177,7 +178,7 @@ class _SlotInfo:
         self,
         className: str,
         displayName: str,
-        socketType: str,
+        socketType: SocketTyping | None,
         slotType: SlotType,
         slotName: str,
         slotInd: int,
@@ -302,12 +303,12 @@ class ComfyFactory:
     def expandSearchInfoFromDef(self, name: str, nodeDef: ComfyNodeSpec) -> None:
         slotTypes = loadSlots()
 
-        def getSocketType(spec: Any) -> str:
+        def getSocketType(spec: Any) -> SocketTyping | None:
             for s in slotTypes:
-                typeName = s.socketTypeFromSpec(spec)
-                if typeName is not None:
-                    return typeName
-            return "UNDEFINED"
+                socketTyping = s.socketTypeFromSpec(spec)
+                if socketTyping is not None:
+                    return socketTyping
+            return None
 
         if "input" in nodeDef:
             inputs = nodeDef["input"]
@@ -344,7 +345,7 @@ class ComfyFactory:
                 _SlotInfo(
                     name,
                     nodeDef["display_name"],
-                    typeName,
+                    SocketTyping(typeName),
                     SlotType.OUTPUT,
                     slotName,
                     i,

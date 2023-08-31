@@ -6,6 +6,7 @@ from customWidgets.QSlotContentGraphicsItem import (
 )
 
 from constants import SlotType
+from node.socket import SocketTyping
 from style.socketStyle import SocketPainter, SocketStyles
 
 if TYPE_CHECKING:
@@ -27,8 +28,9 @@ class NamedSlot(NodeSlot):
         slotType: SlotType,
         isOptional: bool,
     ) -> None:
+        socketTyping = SocketTyping(typeName) if typeName != "" else SocketTyping() 
         super().__init__(
-            node, None, name, ind, typeName, socketPainter, slotType, isOptional
+            node, None, name, ind, socketTyping, socketPainter, slotType, isOptional
         )
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
@@ -39,9 +41,9 @@ class NamedSlot(NodeSlot):
         return isinstance(spec, list) and len(spec) == 1 and isinstance(spec[0], str)
 
     @classmethod
-    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+    def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         if cls.constructableFromSpec(spec):
-            return spec[0]
+            return SocketTyping(spec[0])
         return None
 
     @classmethod

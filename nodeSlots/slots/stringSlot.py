@@ -8,6 +8,7 @@ from customWidgets.QSlotContentGraphicsItem import (
 
 from PySide6.QtGui import Qt
 import PySide6.QtWidgets as QWgt
+from node.socket import SocketTyping
 
 from style.socketStyle import SocketPainter, SocketStyles
 from constants import SlotType
@@ -42,7 +43,7 @@ class MultiLineTextSlot(NodeSlot):
             default,
             name,
             ind,
-            self.SocketTypeName,
+            SocketTyping(self.SocketTypeName),
             socketPainter,
             slotType,
             isOptional,
@@ -70,9 +71,9 @@ class MultiLineTextSlot(NodeSlot):
         )
 
     @classmethod
-    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+    def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         if cls.constructableFromSpec(spec):
-            return cls.SocketTypeName
+            return SocketTyping(cls.SocketTypeName)
         return None
 
     @classmethod
@@ -128,7 +129,7 @@ class TextSlot(NodeSlot):
             default,
             name,
             ind,
-            self.SocketTypeName,
+            SocketTyping(self.SocketTypeName),
             socketPainter,
             slotType,
             isOptional,
@@ -154,9 +155,9 @@ class TextSlot(NodeSlot):
         )
 
     @classmethod
-    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+    def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         if cls.constructableFromSpec(spec):
-            return cls.SocketTypeName
+            return SocketTyping(cls.SocketTypeName)
         return None
 
     @classmethod

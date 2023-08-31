@@ -9,6 +9,7 @@ from constants import SlotType
 from graphOps import GraphOp, GR_OP_STATUS, registerOp
 
 from graphOps.ops.opMove import OpMove
+from node.socket import SocketTyping
 from nodeGUI import GrNodeSocket, PreviewEdge
 from node import NodeEdge
 
@@ -153,16 +154,28 @@ class OpAddEdge(GraphOp):
         nodeView.nodeScene.deactivateSockets()
         self.releaseView(nodeView)
 
+    def filter(
+        self, socketTyping: SocketTyping | None, targetedSocket: SocketTyping | None
+    ) -> bool:
+        if targetedSocket is None or socketTyping is None:
+            return False
+        return socketTyping.checkCompat(targetedSocket)
+
     def showSearchMenu(self, nodeView: QNodeGraphicsView) -> None:
         assert self.dragged_edge is not None
         factory = nodeView.nodeScene.sceneCollection.nodeFactory
         searchMenu = factory.getDetailedSearch()
         slotype = self.dragged_edge.socket.nodeSocket.nodeSlot.slotType
-        typeName = self.dragged_edge.socket.nodeSocket.socketType
+        socketTyping = self.dragged_edge.socket.nodeSocket.socketType
+        isOutput = self.dragged_edge.socket.nodeSocket.nodeSlot.isOutput
         searchMenu.setFilter(
-            lambda x, y: x.match(y)
-            and x.slotType != slotype
-            and x.socketType == typeName
+            lambda x, y: x.slotType != slotype
+            and (
+                self.filter(x.socketType, socketTyping)
+                if isOutput
+                else self.filter(socketTyping, x.socketType)
+            )
+            and x.match(y)
         )
 
         def searchFinish(ind: int) -> None:

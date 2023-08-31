@@ -2,6 +2,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from typing import TYPE_CHECKING, Any, List, Type, Set, Dict
+from node.socket import SocketTyping
 from server import ComfyPromptManager, NodeAddress, NodeResult
 from customWidgets.QSlotContentGraphicsItem import QSlotContentGraphicsItem
 from node import NodeSocket
@@ -20,7 +21,7 @@ class NodeSlot:
         content: Any,
         name: str,
         ind: int,
-        typeName: str,
+        socketTyping: SocketTyping,
         socketPainter: SocketPainter,
         slotType: SlotType,
         isOptional: bool = False,
@@ -35,7 +36,7 @@ class NodeSlot:
         self._padding = 10
         self.optional = isOptional
         self.grContent = self.initContent(self._height)
-        self.socket = self.createSocket(typeName, socketPainter)
+        self.socket = self.createSocket(socketTyping, socketPainter)
         self.grNodeSlot = self.createGUI()
         if slotType == SlotType.INPUT:
             self.node.addInputSlot(self)
@@ -54,18 +55,23 @@ class NodeSlot:
     def createGUI(self) -> GrNodeSlot:
         return GrNodeSlot(self, self.grContent, self._name, self.slotType, self._height)
 
-    def createSocket(self, typeName: str, socketPainter: SocketPainter) -> NodeSocket:
-        return NodeSocket(self, typeName, socketPainter)
+    def createSocket(self, socketTyping: SocketTyping, socketPainter: SocketPainter) -> NodeSocket:
+        return NodeSocket(self, socketTyping, socketPainter)
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
         raise NotImplementedError()
+    
+    @property
+    def isOutput(self) -> bool:
+        return self.slotType == SlotType.OUTPUT
+
 
     @classmethod
     def constructableFromSpec(self, spec: Any) -> bool:
         raise NotImplementedError()
 
     @classmethod
-    def socketTypeFromSpec(cls, spec: Any) -> str | None:
+    def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         raise NotImplementedError()
 
     @classmethod

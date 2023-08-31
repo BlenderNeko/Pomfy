@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict
 from customWidgets.QSlotContentGraphicsItem import (
     QSlotContentGraphicsItem,
 )
+from node.socket import SocketTyping
 
 from style.socketStyle import SocketPainter, SocketStyles
 from constants import SlotType
@@ -28,7 +29,7 @@ class BooleanSlot(NodeSlot):
         isOptional: bool,
     ) -> None:
         super().__init__(
-            node, None, name, ind, typeName, socketPainter, slotType, isOptional
+            node, None, name, ind, SocketTyping("BOOL"), socketPainter, slotType, isOptional
         )
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
