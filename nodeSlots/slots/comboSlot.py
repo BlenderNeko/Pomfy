@@ -25,6 +25,8 @@ class ComboSLotTyping(SocketTyping):
     def checkCompat(self, outputTarget: SocketTyping) -> bool:
         if not super().checkCompat(outputTarget):
             return False
+        if len(outputTarget.types) == 0:
+            return True
         if isinstance(outputTarget, ComboSLotTyping):
             for t in outputTarget.comboItems:
                 if t not in self.comboItems:
