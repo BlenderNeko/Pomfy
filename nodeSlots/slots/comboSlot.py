@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Any, Dict
+from typing import TYPE_CHECKING, List, Any, Dict, cast
 from customWidgets.QComboSpinner import QComboSpinner
 from customWidgets.QSlotContentGraphicsItem import (
     QSlotContentGraphicsItem,
@@ -17,6 +17,25 @@ if TYPE_CHECKING:
 from nodeSlots.nodeSlot import NodeSlot, registerSlot
 
 
+class ComboSLotTyping(SocketTyping):
+    def __init__(self, comboItems: List[str]) -> None:
+        super().__init__("COMBO")
+        self.comboItems = comboItems
+
+    def checkCompat(self, outputTarget: SocketTyping) -> bool:
+        if not super().checkCompat(outputTarget):
+            return False
+        if isinstance(outputTarget, ComboSLotTyping):
+            for t in outputTarget.comboItems:
+                if t not in self.comboItems:
+                    return False
+            return True
+        return False
+
+    def updateItems(self, comboItems: List[str]) -> None:
+        self.comboItems = comboItems
+
+
 @registerSlot
 class ComboSlot(NodeSlot):
     def __init__(
@@ -29,10 +48,17 @@ class ComboSlot(NodeSlot):
         slotType: SlotType,
         isOptional: bool = False,
     ):
-        self.items = items
+        self._items = items
         self.default = items[0] if len(items) > 0 else ""
         super().__init__(
-            node, self.default, name, ind, SocketTyping("COMBO"), socketPainter, slotType, isOptional
+            node,
+            self.default,
+            name,
+            ind,
+            ComboSLotTyping(items),
+            socketPainter,
+            slotType,
+            isOptional,
         )
 
     def initContent(self, height: float) -> QSlotContentGraphicsItem | None:
@@ -40,6 +66,14 @@ class ComboSlot(NodeSlot):
             self._name, 100, height, self._value_changed, self.items, self.default
         )
         return self.grItem
+
+    def updateItems(self, items: List[str]) -> None:
+        self._items = items
+        cast(QComboSpinner, self.grItem).updateItems(items)
+
+    @property
+    def items(self) -> List[str]:
+        return self._items
 
     def _value_changed(self, command: QUndoCommand) -> None:
         self.node.nodeScene.sceneCollection.undoStack.push(command)
@@ -56,7 +90,7 @@ class ComboSlot(NodeSlot):
     @classmethod
     def socketTypeFromSpec(cls, spec: Any) -> SocketTyping | None:
         if cls.constructableFromSpec(spec):
-            return SocketTyping("COMBO")
+            return ComboSLotTyping(spec[0])
         return None
 
     @classmethod
