@@ -20,9 +20,10 @@ class NodeInfoPanel(QWgt.QWidget):
         self.storedWidgets: List[QWgt.QWidget] = []
 
     def setContent(self, widgets: List[Tuple[str, QWgt.QWidget]]) -> None:
-        for ind in range(self.layoutForm.rowCount()):
-            self.layoutForm.removeRow(ind)
         self.storedWidgets = []
+        for _ in range(self.layoutForm.rowCount()):
+            self.layoutForm.removeRow(0)
+
         for label, widget in widgets:
             self.storedWidgets.append(widget)
             self.layoutForm.addRow(label, widget)

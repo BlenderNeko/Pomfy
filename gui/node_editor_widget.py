@@ -71,7 +71,8 @@ class QNodeEditor(QWgt.QWidget):
         self._layout.addWidget(self.sideTabs)
         self._layout.setAlignment(self.sideTabs, QCor.Qt.AlignmentFlag.AlignTop)
         self.sidePanel.setParent(self)
-        self.sidePanel.setMinimumWidth(250)
+        self.sidePanel.setFixedWidth(250)
+
         self.sidePanel.move(self.width() - self.sidePanel.width() - 10, 10)
         self.view.activeNodeChanged.connect(self.activeNodeChange)
 

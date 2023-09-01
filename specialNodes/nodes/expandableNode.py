@@ -77,3 +77,9 @@ class ExpandableNode(Node):
             self.removeOutputSlot(newSlot)
         else:
             self.removeInputSlot(newSlot)
+
+    def onExpandableSlotAdded(self, slot: NodeSlot) -> None:
+        pass
+
+    def onExpandableSlotRemoved(self, slot: NodeSlot) -> None:
+        pass

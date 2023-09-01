@@ -42,7 +42,7 @@ class NodeEdge:
         self.ntm = self._nodeScene.sceneCollection.ntm
         self._outputSocket: NodeSocket = outputSocket
         self._inputSocket: NodeSocket = inputSocket
-        self._grEdge = GrNodeEdge(self)
+        self._grEdge: GrNodeEdge = GrNodeEdge(self)
         self._nodeScene.addEdge(self)
         outputSocket.addEdge(self)
         inputSocket.addEdge(self)
